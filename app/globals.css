@@ -1,0 +1,372 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Infinite carousel animation - slides left continuously */
+@keyframes carousel {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-carousel {
+  animation: carousel 15s linear infinite;
+}
+
+/* Last One Banner Glow Animation */
+@keyframes bannerGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.8), 0 0 20px rgba(220, 38, 38, 0.6), 0 0 30px rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(220, 38, 38, 1), 0 0 40px rgba(220, 38, 38, 0.8), 0 0 60px rgba(220, 38, 38, 0.6);
+  }
+}
+
+.animate-banner-glow {
+  animation: bannerGlow 1.5s ease-in-out infinite;
+}
+
+/* Success Modal Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.4s ease-out;
+}
+
+@keyframes fireGlow {
+  0%, 100% {
+    filter: brightness(1) saturate(1);
+    box-shadow: 0 0 10px rgba(255, 69, 0, 0.8), inset 0 0 5px rgba(255, 215, 0, 0.6);
+  }
+  50% {
+    filter: brightness(1.3) saturate(1.2);
+    box-shadow: 0 0 20px rgba(255, 69, 0, 1), inset 0 0 10px rgba(255, 215, 0, 0.8);
+  }
+}
+
+@keyframes fireMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes fireMoveRight {
+  0% {
+    background-position: 200% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes flicker {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.7), 0 0 40px rgba(239, 68, 68, 0.4);
+    border-color: #ef4444;
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(239, 68, 68, 1), 0 0 60px rgba(239, 68, 68, 0.6), 0 0 80px rgba(239, 68, 68, 0.3);
+    border-color: #dc2626;
+  }
+}
+
+/* Black Diamond Tier - Luxury Cars */
+@keyframes blackDiamondGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.3);
+    border-color: #1a1a2e;
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 0, 0, 1), 0 0 50px rgba(139, 92, 246, 0.7), 0 0 80px rgba(139, 92, 246, 0.4);
+    border-color: #8b5cf6;
+  }
+}
+
+@keyframes diamondParticles {
+  0% {
+    background-position: 0% 0%, 100% 100%, 50% 50%;
+  }
+  100% {
+    background-position: 100% 100%, 0% 0%, 150% 150%;
+  }
+}
+
+/* Diamond Tier - Rolex, High-end Watches */
+@keyframes diamondSparkle {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.6), 0 0 30px rgba(99, 102, 241, 0.4), 0 0 45px rgba(99, 102, 241, 0.3);
+    border-color: #6366f1;
+  }
+  25% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.8), 0 0 40px rgba(99, 102, 241, 0.6), 0 0 55px rgba(99, 102, 241, 0.4);
+    border-color: #818cf8;
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(99, 102, 241, 1), 0 0 50px rgba(99, 102, 241, 0.8), 0 0 65px rgba(99, 102, 241, 0.5);
+    border-color: #a5b4fc;
+  }
+  75% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.8), 0 0 40px rgba(99, 102, 241, 0.6), 0 0 55px rgba(99, 102, 241, 0.4);
+    border-color: #818cf8;
+  }
+}
+
+/* Gold Tier - iPhone, MacBook */
+@keyframes goldGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.6), 0 0 30px rgba(255, 193, 7, 0.4), 0 0 45px rgba(255, 152, 0, 0.3);
+    border-color: #ffd700;
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.9), 0 0 45px rgba(255, 193, 7, 0.6), 0 0 60px rgba(255, 152, 0, 0.4);
+    border-color: #ffca28;
+  }
+}
+
+/* Silver Tier - Mid-range gadgets */
+@keyframes silverShine {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(192, 192, 192, 0.5), 0 0 20px rgba(169, 169, 169, 0.3);
+    border-color: #c0c0c0;
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(192, 192, 192, 0.7), 0 0 30px rgba(169, 169, 169, 0.5);
+    border-color: #e8e8e8;
+  }
+}
+
+/* Bronze Tier - Smaller prizes */
+@keyframes bronzeMatte {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(205, 127, 50, 0.4);
+    border-color: #cd7f32;
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(205, 127, 50, 0.6);
+    border-color: #d4945a;
+  }
+}
+
+/* Tier card backgrounds - Using PNG images instead of gradients */
+.tier-black-diamond {
+  position: relative;
+  overflow: hidden !important;
+}
+
+.tier-diamond {
+  position: relative;
+  overflow: hidden !important;
+}
+
+.tier-gold {
+  position: relative;
+  overflow: hidden !important;
+}
+
+.tier-silver {
+  position: relative;
+  overflow: hidden !important;
+}
+
+.tier-bronze {
+  position: relative;
+  overflow: hidden !important;
+}
+
+/* Smooth transitions for interactive elements */
+a, button {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Poppins font family for entire site */
+* {
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  /* Ensure proper mobile viewport */
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Mobile typography adjustments */
+  h1 {
+    font-size: 1.75rem;
+    line-height: 1.3;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+    line-height: 1.3;
+  }
+  
+  h3 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+  }
+  
+  /* Mobile button sizing */
+  button {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* Mobile input sizing */
+  input, textarea, select {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px;
+  }
+  
+  /* Mobile card grid spacing */
+  .grid {
+    gap: 0.75rem;
+  }
+  
+  /* Mobile modal improvements */
+  .fixed.inset-0 {
+    padding: 1rem;
+  }
+  
+  /* Touch-friendly spacing */
+  .space-y-2 > * + * {
+    margin-top: 0.75rem;
+  }
+  
+  /* Mobile filter sidebar */
+  .md\:flex {
+    display: none;
+  }
+}
+
+/* Tablet-specific adjustments */
+@media (min-width: 768px) and (max-width: 1024px) {
+  /* Adjust grid columns for tablet */
+  .grid-cols-1.md\:grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 375px) {
+  /* Further compress spacing on very small screens */
+  .px-4 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+}
+
+/* ============================================
+   WELCOME MODAL STYLES
+   ============================================ */
+
+/* Base styles (applies to all screen sizes) */
+.welcome-modal-btn {
+  border-radius: 7px;
+}
+
+/* MOBILE & TABLET STYLES (max-width: 1024px) */
+@media (max-width: 1024px) {
+  /* Background - mobile image */
+  .welcome-modal-bg {
+    background-image: url('/fullmodal-mobile.png') !important;
+    background-size: cover !important;
+    background-position: center !important;
+  }
+  
+  /* Button - responsive width with clamp */
+  .welcome-modal-btn {
+    width: clamp(12.5rem, 10.268rem + 11.16vw, 15.625rem);
+  }
+  
+  /* Welcome modal content - responsive text sizing */
+  .welcome-modal-content h1 {
+    font-size: 20px !important;
+    line-height: 20px !important;
+  }
+  
+  .welcome-modal-content p {
+    font-size: 8.5px !important;
+    font-weight: 200 !important;
+  }
+  
+  .welcome-modal-content img {
+    width: clamp(200px, 60vw, 600px) !important;
+  }
+  
+  /* Button text sizing */
+  .welcome-modal-btn {
+    font-size: 16px !important;
+    padding: 12px 24px !important;
+  }
+  
+  /* Stats - Rewards Claimed */
+  .welcome-modal-stats-number {
+    font-size: 18px !important;
+  }
+  
+  .welcome-modal-stats-label {
+    font-size: 10px !important;
+  }
+}
+
+/* DESKTOP STYLES (min-width: 1025px) */
+@media (min-width: 1025px) {
+  /* Background - uses inline style from page.tsx (fullmodal.png) */
+  
+  /* Button - auto width */
+  .welcome-modal-btn {
+    width: auto;
+  }
+}
