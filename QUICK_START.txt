@@ -1,0 +1,82 @@
+╔══════════════════════════════════════════════════════════════╗
+║           🔐 AUTHENTICATION SYSTEM - QUICK START             ║
+╚══════════════════════════════════════════════════════════════╝
+
+📋 SETUP CHECKLIST:
+
+□ Step 1: Open Supabase Dashboard (https://supabase.com)
+□ Step 2: Go to SQL Editor
+□ Step 3: Run: supabase/create-users-auth.sql
+□ Step 4: Run the UPDATE statements below
+□ Step 5: Visit: http://localhost:3000/login
+
+─────────────────────────────────────────────────────────────
+
+🔑 RUN THESE IN SUPABASE SQL EDITOR:
+
+UPDATE users SET password_hash = '$2a$10$EM0dts9qmNzZNqnGxGoXo.cihGsQ/SeVcYBuq8tUBJDONLumqjRJO' WHERE email = 'superadmin@time2claim.com';
+UPDATE users SET password_hash = '$2a$10$oZhurRe6uKQWhf0w3IuLiOpy1ctotcAjAvPHMqnm41XPZUKpjkMTm' WHERE email = 'admin1@time2claim.com';
+UPDATE users SET password_hash = '$2a$10$t5OWSKqSGqcqgMJ.zE1yy.z8LHIRKq7bzAzg2agjEVRXT88iXpaZK' WHERE email = 'admin2@time2claim.com';
+UPDATE users SET password_hash = '$2a$10$FkZ73rWbYBu8/jJSbDXTzOZNIW939MgUztuJirLuWnfuOygfayqVm' WHERE email = 'admin3@time2claim.com';
+
+─────────────────────────────────────────────────────────────
+
+👤 LOGIN CREDENTIALS:
+
+╭─ SUPER ADMIN ────────────────────────────────────────╮
+│ Email:    superadmin@time2claim.com                  │
+│ Password: SuperAdmin123!                             │
+│ Access:   Full system control + user management     │
+╰──────────────────────────────────────────────────────╯
+
+╭─ ADMIN 1 ────────────────────────────────────────────╮
+│ Email:    admin1@time2claim.com                      │
+│ Password: Admin123!                                  │
+│ Access:   Manage rewards & claims                   │
+╰──────────────────────────────────────────────────────╯
+
+╭─ ADMIN 2 ────────────────────────────────────────────╮
+│ Email:    admin2@time2claim.com                      │
+│ Password: Admin123!                                  │
+│ Access:   Manage rewards & claims                   │
+╰──────────────────────────────────────────────────────╯
+
+╭─ ADMIN 3 ────────────────────────────────────────────╮
+│ Email:    admin3@time2claim.com                      │
+│ Password: Admin123!                                  │
+│ Access:   Manage rewards & claims                   │
+╰──────────────────────────────────────────────────────╯
+
+─────────────────────────────────────────────────────────────
+
+📁 FILES CREATED:
+
+✓ supabase/create-users-auth.sql    - Database schema
+✓ app/api/auth/login/route.ts       - Login API
+✓ app/api/auth/logout/route.ts      - Logout API
+✓ app/api/auth/me/route.ts          - Current user API
+✓ app/login/page.tsx                - Login page UI
+✓ AUTHENTICATION_SETUP.md           - Full documentation
+✓ AUTH_COMPLETE.md                  - This guide
+
+─────────────────────────────────────────────────────────────
+
+🌐 URLs:
+
+Login Page:  http://localhost:3000/login
+Admin Panel: http://localhost:3000/admin/dashboard
+
+─────────────────────────────────────────────────────────────
+
+⚠️  SECURITY REMINDERS:
+
+• Change default passwords after first login
+• Use HTTPS in production
+• Keep Supabase credentials secret
+• Enable 2FA for production
+
+─────────────────────────────────────────────────────────────
+
+📖 For detailed documentation, see AUTHENTICATION_SETUP.md
+
+╚══════════════════════════════════════════════════════════════╝
