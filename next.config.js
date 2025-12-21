@@ -5,9 +5,6 @@ const nextConfig = {
   },
   devIndicators: {
     buildActivity: true
-  },
-  experimental: {
-    optimizeCss: true
   }
 }
 

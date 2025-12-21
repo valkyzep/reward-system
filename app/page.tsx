@@ -2,7 +2,7 @@
 "use client"
 import Image from 'next/image'
 import { useState, useMemo, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, animate } from 'framer-motion'
 import dynamic from 'next/dynamic'
 
 const PointsRangeSlider = dynamic(() => import('./PointsRangeSlider'), { ssr: false })
@@ -44,6 +44,95 @@ export default function Home() {
   const [csrfToken, setCsrfToken] = useState<string>('')
   const [categories, setCategories] = useState<any[]>([])
   const [tiers, setTiers] = useState<any[]>([])
+
+  // Counter animation for stats
+  const [rewardsClaimedCount, setRewardsClaimedCount] = useState(0)
+  const [activePlayersCount, setActivePlayersCount] = useState(500) // Represents 500K players
+  const [statsLoaded, setStatsLoaded] = useState(false)
+
+  // Fetch initial stats from database
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/stats')
+        const data = await response.json()
+        setRewardsClaimedCount(data.rewardsClaimed || 0)
+        
+        // Clamp active players to valid range 100-999
+        let players = data.activePlayers || 500
+        if (players < 100) players = 100
+        if (players > 999) players = 999
+        setActivePlayersCount(players)
+        
+        setStatsLoaded(true)
+      } catch (error) {
+        console.error('Error fetching stats:', error)
+        setStatsLoaded(true)
+      }
+    }
+    fetchStats()
+  }, [])
+
+  // Incrementing counter for rewards claimed - adds random 1-5 every 2 seconds
+  useEffect(() => {
+    if (showWelcomeModal && statsLoaded) {
+      const interval = setInterval(() => {
+        setRewardsClaimedCount(prev => {
+          const newCount = prev + Math.floor(Math.random() * 5) + 1
+          // Update database every 10 increments
+          if (newCount % 10 === 0) {
+            fetch('/api/stats', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                rewardsClaimed: newCount,
+                activePlayers: activePlayersCount
+              })
+            }).catch(err => console.error('Error updating stats:', err))
+          }
+          return newCount
+        })
+      }, 2000)
+      
+      return () => clearInterval(interval)
+    }
+  }, [showWelcomeModal, statsLoaded, activePlayersCount])
+
+  // Active players counter - add random -5 to 5 between 100-999 every 3 seconds
+  useEffect(() => {
+    if (statsLoaded) {
+      const interval = setInterval(() => {
+        setActivePlayersCount(prev => {
+          const change = Math.floor(Math.random() * 11) - 5 // Random -5 to 5
+          let newCount = prev + change
+          
+          // Keep within 100-999 range
+          if (newCount < 100) newCount = 100
+          if (newCount > 999) newCount = 999
+          
+          return newCount
+        })
+      }, 3000)
+      
+      return () => clearInterval(interval)
+    }
+  }, [statsLoaded])
+
+  // Save active players to database occasionally
+  useEffect(() => {
+    if (statsLoaded && activePlayersCount >= 100 && activePlayersCount <= 999) {
+      if (Math.random() > 0.7) {
+        fetch('/api/stats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            rewardsClaimed: rewardsClaimedCount,
+            activePlayers: activePlayersCount
+          })
+        }).catch(err => console.error('Error updating stats:', err))
+      }
+    }
+  }, [activePlayersCount, rewardsClaimedCount, statsLoaded])
 
   // Disable scroll when welcome modal is open
   useEffect(() => {
@@ -480,16 +569,44 @@ export default function Home() {
             </motion.div>
 
             {/* Bottom-left corner stats for desktop only */}
-            <div className="hidden lg:flex fixed bottom-8 left-[100px] z-[10000] flex-row gap-4 items-center">
-              <div className="bg-black/70 rounded-xl px-5 py-3 text-white shadow-lg border-l-4 border-orange-500">
-                <div className="text-2xl font-bold mb-1">55</div>
-                <div className="text-sm font-semibold text-orange-300">Rewards Claimed</div>
+            {statsLoaded && (
+              <div className="hidden lg:flex fixed bottom-8 left-[100px] z-[10000] flex-row gap-4 items-center">
+                <div className="bg-black/70 rounded-xl px-5 py-3 text-white shadow-lg border-l-4 border-orange-500">
+                  <div className="text-2xl font-bold mb-1 h-8 overflow-hidden relative">
+                    <AnimatePresence mode="popLayout">
+                      <motion.div
+                        key={rewardsClaimedCount}
+                        initial={{ y: 30, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -30, opacity: 0 }}
+                        transition={{ duration: 0.4, ease: "easeInOut" }}
+                        className="absolute inset-0 flex items-center"
+                      >
+                        {rewardsClaimedCount}
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                  <div className="text-sm font-semibold text-orange-300">Rewards Claimed</div>
+                </div>
+                <div className="bg-black/70 rounded-xl px-5 py-3 text-white shadow-lg border-l-4 border-yellow-400">
+                  <div className="text-2xl font-bold mb-1 h-8 overflow-hidden relative">
+                    <AnimatePresence mode="popLayout">
+                      <motion.div
+                        key={activePlayersCount}
+                        initial={{ y: 30, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -30, opacity: 0 }}
+                        transition={{ duration: 0.4, ease: "easeInOut" }}
+                        className="absolute inset-0 flex items-center"
+                      >
+                        {activePlayersCount}K
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                  <div className="text-sm font-semibold text-yellow-200">Active Players</div>
+                </div>
               </div>
-              <div className="bg-black/70 rounded-xl px-5 py-3 text-white shadow-lg border-l-4 border-yellow-400">
-                <div className="text-2xl font-bold mb-1">23K</div>
-                <div className="text-sm font-semibold text-yellow-200">Active Players</div>
-              </div>
-            </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
