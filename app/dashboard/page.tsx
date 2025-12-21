@@ -422,6 +422,7 @@ export default function AdminDashboard() {
     setFormMode('add')
     setFormData({
       name: '',
+      model: '',
       description: '',
       category: categories[0] || 'Gadget',
       variantType: variantTypes[0] || 'color',
