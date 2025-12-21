@@ -554,16 +554,44 @@ export default function Home() {
                 </button>
                 
                 {/* Mobile stats - under button, centered, horizontal */}
-                <div className="lg:hidden flex flex-row items-center justify-center w-full" style={{ gap: 'clamp(0.5rem, 2vw, 0.75rem)' }}>
-                  <div className="bg-transparent text-white shadow-lg  stats-container" style={{ padding: 'clamp(0.5rem, 2vw, 1rem) clamp(0.75rem, 2.5vw, 1rem)' }}>
-                    <div className="font-bold mb-1 welcome-modal-stats-number" style={{ fontSize: 'clamp(1rem, 3vw, 1.25rem)' }}>55</div>
-                    <div className="font-semibold text-white welcome-modal-stats-label" style={{ fontSize: 'clamp(0.625rem, 1.5vw, 0.75rem)' }}>Rewards<br/>Claimed</div>
+                {statsLoaded && (
+                  <div className="lg:hidden flex flex-row items-center justify-center w-full" style={{ gap: 'clamp(0.75rem, 3vw, 1rem)' }}>
+                    <div className="bg-transparent text-white shadow-lg stats-container" style={{ padding: 'clamp(0.75rem, 3vw, 1.25rem) clamp(1rem, 3.5vw, 1.5rem)', minWidth: '100px' }}>
+                      <div className="font-bold mb-1 welcome-modal-stats-number overflow-hidden relative" style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', height: '2.5rem', minWidth: '80px' }}>
+                        <AnimatePresence mode="popLayout">
+                          <motion.div
+                            key={rewardsClaimedCount}
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: -20, opacity: 0 }}
+                            transition={{ duration: 0.4, ease: "easeInOut" }}
+                            className="absolute inset-0 flex items-center justify-center"
+                          >
+                            {rewardsClaimedCount}
+                          </motion.div>
+                        </AnimatePresence>
+                      </div>
+                      <div className="font-semibold text-white welcome-modal-stats-label" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Rewards<br/>Claimed</div>
+                    </div>
+                    <div className="bg-transparent text-white shadow-lg stats-container" style={{ padding: 'clamp(0.75rem, 3vw, 1.25rem) clamp(1rem, 3.5vw, 1.5rem)', minWidth: '100px' }}>
+                      <div className="font-bold mb-1 welcome-modal-stats-number overflow-hidden relative" style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', height: '2.5rem', minWidth: '80px' }}>
+                        <AnimatePresence mode="popLayout">
+                          <motion.div
+                            key={activePlayersCount}
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: -20, opacity: 0 }}
+                            transition={{ duration: 0.4, ease: "easeInOut" }}
+                            className="absolute inset-0 flex items-center justify-center"
+                          >
+                            {activePlayersCount}K
+                          </motion.div>
+                        </AnimatePresence>
+                      </div>
+                      <div className="font-semibold text-white welcome-modal-stats-label" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)' }}>Active<br/>Players</div>
+                    </div>
                   </div>
-                  <div className="bg-transparent text-white shadow-lg  stats-container" style={{ padding: 'clamp(0.5rem, 2vw, 1rem) clamp(0.75rem, 2.5vw, 1rem)' }}>
-                    <div className="font-bold mb-1 welcome-modal-stats-number" style={{ fontSize: 'clamp(1rem, 3vw, 1.25rem)' }}>23K</div>
-                    <div className="font-semibold text-white welcome-modal-stats-label" style={{ fontSize: 'clamp(0.625rem, 1.5vw, 0.75rem)' }}>Active<br/>Players</div>
-                  </div>
-                </div>
+                )}
                 </div>
               </div>
             </motion.div>
