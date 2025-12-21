@@ -358,18 +358,13 @@ export default function AdminDashboard() {
     const reward = rewardsList.find(r => String(r.id) === String(id))
     if (reward) {
       setEditingId(String(id))
-      const variants = (reward as any).variants || { type: 'color', options: [] }
-      const galleries = (reward as any).galleries || {}
       setEditValues({ 
         name: reward.name, 
         points: reward.points.toString(), 
         category: (reward as any).category || 'Gadget', 
         quantity: ((reward as any).quantity || 0).toString(),
-        variantType: variants.type || 'color',
-        variantOptions: variants.options?.join(', ') || '',
-        galleries: galleries
+        images: reward.images || []
       })
-      setEditingGalleries(JSON.parse(JSON.stringify(galleries)))
     }
   }
 
@@ -387,18 +382,15 @@ export default function AdminDashboard() {
           points: editValues.points,
           category: editValues.category,
           quantity: editValues.quantity,
-          variantType: editValues.variantType,
-          variantOptions: editValues.variantOptions,
-          galleries: editingGalleries
+          images: editValues.images
         })
       })
       
       if (response.ok) {
-        // Refresh rewards list from database to get updated galleries
+        // Refresh rewards list from database
         await fetchRewards()
         setEditingId(null)
-        setEditValues({ name: '', points: '', category: '', quantity: '', variantType: '', variantOptions: '', galleries: {} })
-        setEditingGalleries({})
+        setEditValues({ name: '', points: '', category: '', quantity: '', images: [] })
       } else {
         alert('Failed to update reward')
       }
@@ -660,9 +652,7 @@ export default function AdminDashboard() {
           points: newReward.points,
           category: newReward.category,
           quantity: newReward.quantity,
-          variantType: newReward.variantType,
-          variantOptions: newReward.variantOptions,
-          galleries: newGalleries
+          images: newReward.images
         })
       })
       
@@ -670,8 +660,7 @@ export default function AdminDashboard() {
         const data = await response.json()
         // Refresh rewards list from database
         await fetchRewards()
-        setNewReward({ name: '', points: '', category: 'Gadget', quantity: '', variantType: 'color', variantOptions: '', galleries: {} })
-        setNewGalleries({})
+        setNewReward({ name: '', points: '', category: 'Gadget', quantity: '', images: [] })
         setShowAddCard(false)
       } else {
         alert('Failed to add reward')
@@ -741,13 +730,12 @@ export default function AdminDashboard() {
         body: JSON.stringify({
           id: rewardId,
           name: reward?.name,
+          model: (reward as any)?.model || '',
           points: reward?.points,
           category: (reward as any)?.category || 'Gadget',
           quantity: newQuantity,
-          variantType: (reward as any)?.variants?.type || 'color',
-          variantOptions: (reward as any)?.variants?.options?.join(', ') || '',
           tier: (reward as any)?.tier || 'bronze',
-          galleries: (reward as any)?.galleries || {}
+          images: reward?.images || []
         })
       })
 
