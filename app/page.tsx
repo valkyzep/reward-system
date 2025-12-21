@@ -27,12 +27,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [selectedReward, setSelectedReward] = useState<null | any>(null)
   const [selectedGalleryImage, setSelectedGalleryImage] = useState(0)
-  const [selectedVariant, setSelectedVariant] = useState<string>('')
   const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [tierFilter, setTierFilter] = useState<string[]>([])
   const [pointsRange, setPointsRange] = useState<[number, number]>([MIN_POINTS, MAX_POINTS])
   const [sortOrder, setSortOrder] = useState<'high-low' | 'low-high'>('high-low')
-  const [selectedVariants, setSelectedVariants] = useState<Record<number, string>>({})
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -148,12 +146,10 @@ export default function Home() {
     return () => clearInterval(interval)
   }, [carouselRewards.length])
 
-  // Reset gallery image and variant when popup opens
+  // Reset gallery image when popup opens
   useEffect(() => {
     if (selectedReward) {
       setSelectedGalleryImage(0)
-      const firstVariant = (selectedReward as any).variants?.options?.[0] || ''
-      setSelectedVariant(firstVariant)
     }
   }, [selectedReward])
 
@@ -1323,11 +1319,11 @@ export default function Home() {
                   <div className="popup-main-image bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden relative" style={{ aspectRatio: '658/403' }}>
                     <img 
                       src={
-                        (selectedReward as any).galleries && selectedVariant && (selectedReward as any).galleries[selectedVariant]
-                          ? (selectedReward as any).galleries[selectedVariant][selectedGalleryImage]
+                        (selectedReward as any).images && (selectedReward as any).images[selectedGalleryImage]
+                          ? (selectedReward as any).images[selectedGalleryImage]
                           : ((selectedReward as any).image || `https://via.placeholder.com/658x403/555555/FFFFFF?text=${encodeURIComponent(selectedReward.name)}`)
                       }
-                      alt={`${selectedReward.name} - ${selectedVariant} - Image ${selectedGalleryImage + 1}`}
+                      alt={`${selectedReward.name} - Image ${selectedGalleryImage + 1}`}
                       className="w-full h-full object-contain"
                     />
                   </div>
@@ -1346,8 +1342,8 @@ export default function Home() {
                       >
                         <img 
                           src={
-                            (selectedReward as any).galleries && selectedVariant && (selectedReward as any).galleries[selectedVariant]
-                              ? (selectedReward as any).galleries[selectedVariant][idx]
+                            (selectedReward as any).images && (selectedReward as any).images[idx]
+                              ? (selectedReward as any).images[idx]
                               : ((selectedReward as any).image || `https://via.placeholder.com/150x150/555555/FFFFFF?text=${idx + 1}`)
                           }
                           alt={`Gallery ${idx + 1}`}
@@ -1362,92 +1358,12 @@ export default function Home() {
                 <div className="popup-right-column pt-4 md:pt-6 px-4 md:px-6 pb-4 space-y-2 flex flex-col justify-end">
                     {/* Product Name */}
                     <h1 className="popup-product-name font-bold text-lg md:text-xl" style={{ lineHeight: '1.2' }}>{selectedReward.name}</h1>
-                    <p className="popup-product-subtitle text-gray-400 pb-2 text-xs md:text-sm">{selectedReward.name}</p>
+                    <p className="popup-product-subtitle text-white pb-2 text-xs md:text-sm">{selectedReward.model}</p>
                     
                     {/* Description */}
-                    <p className="popup-description text-sm text-gray-400" style={{ fontSize: '9px' }}>Premium quality reward from our exclusive collection. <br/>Limited availability.</p>
-                    
-                    {/* Variant Options */}
-                    {(selectedReward as any).variants && (
-                      <div className="popup-variant-section py-1">
-                        <label className="popup-variant-label font-semibold text-white uppercase mb-1 block" style={{ fontSize: '9px' }}>
-                          SELECT {(selectedReward as any).variants.type.toUpperCase()}:
-                        </label>
-                      
-                        {(selectedReward as any).variants.type === 'color' ? (
-                          /* Colored circle buttons for color variants */
-                          <div className="flex flex-wrap gap-2">
-                            {(selectedReward as any).variants.options.map((option: string) => {
-                              const colorMap: { [key: string]: string } = {
-                                'Black': '#000000',
-                                'White': '#FFFFFF',
-                                'Red': '#FF0000',
-                                'Blue': '#0000FF',
-                                'Silver': '#C0C0C0',
-                                'Clear': '#F0F0F0',
-                                'Black Titanium': '#2C2C2C',
-                                'White Titanium': '#E8E8E8',
-                                'Natural Titanium': '#B8956A',
-                                'Desert Titanium': '#D4A373',
-                                'Alpine White': '#F5F5F5',
-                                'Black Sapphire': '#1C1C1C',
-                                'San Marino Blue': '#2B4F81',
-                                'Green': '#22C55E',
-                                'Asteroid Black': '#1A1A1A',
-                                'Stardust Blue': '#3B82F6',
-                                'Matte Black': '#1A1A1A',
-                                'Racing Blue': '#0066CC',
-                                'Matte Red': '#B22222'
-                              }
-                              const bgColor = colorMap[option] || '#808080'
-                              return (
-                                <button
-                                  key={option}
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedVariant(option)
-                                    setSelectedGalleryImage(0)
-                                  }}
-                                  className={`popup-variant-color relative w-5 h-5 rounded-full transition-all hover:scale-110 ${
-                                    selectedVariant === option
-                                      ? 'ring-2 ring-white'
-                                      : ''
-                                  }`}
-                                  style={{ backgroundColor: bgColor }}
-                                  title={option}
-                                >
-                                  {option === 'White' || option === 'Clear' || option.includes('White') ? (
-                                    <div className="absolute inset-0 rounded-full border border-gray-400" />
-                                  ) : null}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        ) : (
-                          /* Text buttons for non-color variants */
-                          <div className="flex flex-wrap gap-2">
-                            {(selectedReward as any).variants.options.map((option: string) => (
-                              <button
-                                key={option}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedVariant(option)
-                                  setSelectedGalleryImage(0)
-                                }}
-                                className={`popup-variant-button px-2 py-1 rounded-lg font-semibold transition ${
-                                  selectedVariant === option
-                                    ? 'bg-yellow-500 text-black'
-                                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
-                                }`}
-                                style={{ fontSize: '8px' }}
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <p className="popup-description text-sm text-gray-400" style={{ fontSize: '9px' }}>
+                      {selectedReward.description || 'Premium quality reward from our exclusive collection. Limited availability.'}
+                    </p>
                     
                     {/* Points */}
                     <div className="popup-points flex items-center gap-2">
@@ -1481,7 +1397,6 @@ export default function Home() {
                   
                   const claimData = {
                     rewardId: selectedReward.id,
-                    variantOption: selectedVariant,
                     username: formData.get('username'),
                     fullName: formData.get('fullName'),
                     phoneNumber: phoneNumber ? `+63${phoneNumber}` : null,

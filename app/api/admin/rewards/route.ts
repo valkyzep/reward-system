@@ -2,24 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import { csrfProtection } from '@/lib/csrf'
 
-// GET - Fetch all rewards with variants and galleries
+// GET - Fetch all rewards
 export async function GET(request: NextRequest) {
   try {
     const supabase = await getSupabaseAdmin()
     const { data: rewards, error } = await supabase
       .from('rewards')
-      .select(`
-        *,
-        variants:reward_variants(
-          id,
-          option_name,
-          galleries:reward_galleries(
-            id,
-            image_url,
-            image_order
-          )
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
 
     if (error) throw error
@@ -29,20 +18,12 @@ export async function GET(request: NextRequest) {
       id: reward.id,
       name: reward.name,
       model: reward.model,
+      description: reward.description || '',
       points: reward.points,
       category: reward.category,
       quantity: reward.quantity,
       tier: reward.tier || 'bronze',
-      variants: {
-        type: reward.variant_type || 'color',
-        options: reward.variants?.map((v: any) => v.option_name) || []
-      },
-      galleries: reward.variants?.reduce((acc: any, variant: any) => {
-        acc[variant.option_name] = variant.galleries
-          ?.sort((a: any, b: any) => a.image_order - b.image_order)
-          ?.map((g: any) => g.image_url) || []
-        return acc
-      }, {})
+      images: reward.images ? JSON.parse(reward.images) : []
     }))
 
     return NextResponse.json(transformedRewards)
@@ -61,97 +42,25 @@ export async function PATCH(request: NextRequest) {
   try {
     const supabase = await getSupabaseAdmin()
     const body = await request.json()
-    const { id, name, model, points, category, quantity, variantType, variantOptions, tier, galleries } = body
+    const { id, name, model, description, points, category, quantity, tier, images } = body
 
-    // Update reward basic info
+    // Update reward
     const { error: updateError } = await supabase
       .from('rewards')
       .update({
         name,
         model,
+        description: description || '',
         points: parseInt(points),
         category,
         quantity: parseInt(quantity),
-        variant_type: variantType,
         tier: tier || 'bronze',
+        images: JSON.stringify(images || []),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
 
     if (updateError) throw updateError
-
-    // Get current variants
-    const { data: currentVariants } = await supabase
-      .from('reward_variants')
-      .select('id, option_name')
-      .eq('reward_id', id)
-
-    const currentOptions = currentVariants?.map(v => v.option_name) || []
-    const newOptions = variantOptions.split(',').map((s: string) => s.trim()).filter((s: string) => s)
-
-    // Delete removed variants
-    const toDelete = currentVariants?.filter(v => !newOptions.includes(v.option_name)) || []
-    if (toDelete.length > 0) {
-      await supabase
-        .from('reward_variants')
-        .delete()
-        .in('id', toDelete.map(v => v.id))
-    }
-
-    // Add new variants
-    const toAdd = newOptions.filter((opt: string) => !currentOptions.includes(opt))
-    if (toAdd.length > 0) {
-      await supabase
-        .from('reward_variants')
-        .insert(
-          toAdd.map((option: string) => ({
-            reward_id: id,
-            option_name: option
-          }))
-        )
-    }
-
-    // Update galleries if provided
-    if (galleries) {
-      // Get updated variant list
-      const { data: updatedVariants } = await supabase
-        .from('reward_variants')
-        .select('id, option_name')
-        .eq('reward_id', id)
-
-      if (updatedVariants && updatedVariants.length > 0) {
-        // Delete all existing galleries for all variants in one operation
-        const variantIds = updatedVariants.map(v => v.id)
-        await supabase
-          .from('reward_galleries')
-          .delete()
-          .in('variant_id', variantIds)
-
-        // Prepare all galleries to insert in one batch
-        const galleriesToInsert: any[] = []
-        for (const variant of updatedVariants) {
-          const variantGalleries = galleries[variant.option_name] || []
-          if (variantGalleries.length > 0) {
-            variantGalleries.forEach((url: string, index: number) => {
-              if (url && url.trim()) {
-                galleriesToInsert.push({
-                  variant_id: variant.id,
-                  image_url: url,
-                  image_order: index
-                })
-              }
-            })
-          }
-        }
-
-        // Insert all galleries in one operation
-        if (galleriesToInsert.length > 0) {
-          await supabase
-            .from('reward_galleries')
-            .insert(galleriesToInsert)
-        }
-      }
-    }
 
     return NextResponse.json({ success: true, message: 'Reward updated successfully' })
   } catch (error: any) {
@@ -225,7 +134,7 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await getSupabaseAdmin()
     const body = await request.json()
-    const { name, model, points, category, quantity, variantType, variantOptions, tier, galleries } = body
+    const { name, model, description, points, category, quantity, tier, images } = body
 
     // Insert reward
     const { data: reward, error: rewardError } = await supabase
@@ -233,58 +142,17 @@ export async function POST(request: NextRequest) {
       .insert({
         name,
         model,
+        description: description || '',
         points: parseInt(points),
         category,
         quantity: parseInt(quantity),
-        variant_type: variantType,
-        tier: tier || 'bronze'
+        tier: tier || 'bronze',
+        images: JSON.stringify(images || [])
       })
       .select()
       .single()
 
     if (rewardError) throw rewardError
-
-    // Insert variants
-    const options = variantOptions.split(',').map((s: string) => s.trim()).filter((s: string) => s)
-    if (options.length > 0) {
-      const { data: variants, error: variantsError } = await supabase
-        .from('reward_variants')
-        .insert(
-          options.map((option: string) => ({
-            reward_id: reward.id,
-            option_name: option
-          }))
-        )
-        .select()
-
-      if (variantsError) throw variantsError
-
-      // Insert galleries if provided - batch all inserts
-      if (galleries && variants) {
-        const galleriesToInsert: any[] = []
-        for (const variant of variants) {
-          const variantGalleries = galleries[variant.option_name] || []
-          if (variantGalleries.length > 0) {
-            variantGalleries.forEach((url: string, index: number) => {
-              if (url && url.trim()) {
-                galleriesToInsert.push({
-                  variant_id: variant.id,
-                  image_url: url,
-                  image_order: index
-                })
-              }
-            })
-          }
-        }
-        
-        // Insert all galleries in one batch operation
-        if (galleriesToInsert.length > 0) {
-          await supabase
-            .from('reward_galleries')
-            .insert(galleriesToInsert)
-        }
-      }
-    }
 
     return NextResponse.json({ success: true, reward })
   } catch (error: any) {

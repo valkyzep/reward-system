@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-// GET all rewards with their variants and galleries
+// GET all rewards with their images
 export async function GET() {
   try {
     // Fetch all rewards
@@ -11,21 +11,6 @@ export async function GET() {
       .order('points', { ascending: false })
 
     if (rewardsError) throw rewardsError
-
-    // Fetch all variants in one query
-    const { data: allVariants, error: variantsError } = await supabase
-      .from('reward_variants')
-      .select('*')
-
-    if (variantsError) throw variantsError
-
-    // Fetch all galleries in one query
-    const { data: allGalleries, error: galleriesError } = await supabase
-      .from('reward_galleries')
-      .select('*')
-      .order('image_order', { ascending: true })
-
-    if (galleriesError) throw galleriesError
 
     // Fetch all approved claims counts in one query
     const { data: allClaims, error: claimsError } = await supabase
@@ -43,39 +28,23 @@ export async function GET() {
 
     // Build rewards with details
     const rewardsWithDetails = rewards.map((reward) => {
-      // Get variants for this reward
-      const variants = (allVariants || []).filter((v: any) => v.reward_id === reward.id)
-
-      const variantOptions: string[] = []
-      const galleries: Record<string, string[]> = {}
-
-      for (const variant of variants) {
-        variantOptions.push(variant.option_name)
-
-        const galleryImages = (allGalleries || [])
-          .filter((g: any) => g.variant_id === variant.id)
-          .map((img: any) => img.image_url)
-
-        galleries[variant.option_name] = galleryImages
-      }
-
       const approvedCount = claimsCounts[reward.id] || 0
       const availableQuantity = Math.max(0, reward.quantity - approvedCount)
+
+      // Parse images from reward.images field (assuming it's JSON array)
+      const images = reward.images ? (Array.isArray(reward.images) ? reward.images : JSON.parse(reward.images)) : []
 
       return {
         id: reward.id,
         name: reward.name,
         model: reward.model,
+        description: reward.description || '',
         points: reward.points,
         category: reward.category,
         quantity: availableQuantity,
         tier: reward.tier || 'bronze',
-        variants: variantOptions.length > 0 ? {
-          type: reward.variant_type,
-          options: variantOptions
-        } : undefined,
-        image: galleries[variantOptions[0]]?.[0] || '',
-        galleries: Object.keys(galleries).length > 0 ? galleries : undefined
+        image: images[0] || '',
+        images: images
       }
     })
 
@@ -86,57 +55,28 @@ export async function GET() {
   }
 }
 
-// POST - Create a new reward with variants and galleries
+// POST - Create a new reward with images
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, points, category, quantity, variants, galleries } = body
+    const { name, model, points, category, quantity, tier, images } = body
 
     // Insert reward
     const { data: reward, error: rewardError } = await supabase
       .from('rewards')
       .insert({
         name,
+        model,
         points,
         category,
         quantity,
-        variant_type: variants?.type
+        tier,
+        images: JSON.stringify(images || [])
       })
       .select()
       .single()
 
     if (rewardError) throw rewardError
-
-    // Insert variants and galleries
-    if (variants && galleries) {
-      for (const option of variants.options) {
-        // Insert variant
-        const { data: variant, error: variantError } = await supabase
-          .from('reward_variants')
-          .insert({
-            reward_id: reward.id,
-            option_name: option
-          })
-          .select()
-          .single()
-
-        if (variantError) throw variantError
-
-        // Insert galleries for this variant
-        const galleryImages = galleries[option] || []
-        for (let i = 0; i < galleryImages.length; i++) {
-          const { error: galleryError } = await supabase
-            .from('reward_galleries')
-            .insert({
-              variant_id: variant.id,
-              image_url: galleryImages[i],
-              image_order: i
-            })
-
-          if (galleryError) throw galleryError
-        }
-      }
-    }
 
     return NextResponse.json({ success: true, reward })
   } catch (error: any) {

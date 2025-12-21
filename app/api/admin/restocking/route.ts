@@ -30,13 +30,14 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await getSupabaseAdmin()
     const body = await request.json()
-    const { reward_id, reward_name, reward_category, quantity_added, admin_user } = body
+    const { reward_id, reward_name, reward_model, reward_category, quantity_added, admin_user } = body
 
     const { data, error } = await supabase
       .from('restocking_history')
       .insert({
         reward_id,
         reward_name,
+        reward_model,
         reward_category,
         quantity_added,
         admin_user

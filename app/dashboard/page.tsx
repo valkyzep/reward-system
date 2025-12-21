@@ -27,20 +27,17 @@ export default function AdminDashboard() {
   const [showActionHistory, setShowActionHistory] = useState(false)
   const [rewardsList, setRewardsList] = useState<any[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editValues, setEditValues] = useState({ name: '', points: '', category: '', quantity: '', variantType: '', variantOptions: '', galleries: {} as Record<string, string[]> })
+  const [editValues, setEditValues] = useState({ name: '', points: '', category: '', quantity: '', images: [] as string[] })
   const [showAddCard, setShowAddCard] = useState(false)
-  const [newReward, setNewReward] = useState({ name: '', points: '', category: 'Gadget', quantity: '', variantType: 'color', variantOptions: '', galleries: {} as Record<string, string[]> })
-  const [editingGalleries, setEditingGalleries] = useState<Record<string, string[]>>({})
-  const [newGalleries, setNewGalleries] = useState<Record<string, string[]>>({})
+  const [newReward, setNewReward] = useState({ name: '', points: '', category: 'Gadget', quantity: '', images: [] as string[] })
+  const [editingImages, setEditingImages] = useState<(string | File)[]>(['', '', '', ''])
+  const [newImages, setNewImages] = useState<(string | File)[]>(['', '', '', ''])
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'processing' | 'shipped' | 'delivered' | 'rejected'>('pending')
   
   // Category and Variant Type Management
   const [categories, setCategories] = useState<any[]>([])
-  const [variantTypes, setVariantTypes] = useState(['color', 'size', 'denomination'])
   const [showAddCategory, setShowAddCategory] = useState(false)
-  const [showAddVariantType, setShowAddVariantType] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
-  const [newVariantTypeName, setNewVariantTypeName] = useState('')
   
   // Reward Form Modal
   const [showRewardForm, setShowRewardForm] = useState(false)
@@ -50,11 +47,10 @@ export default function AdminDashboard() {
     model: '',
     description: '',
     category: 'Gadget',
-    variantType: 'color',
     points: '',
     quantity: '',
     tier: 'bronze',
-    variants: [] as Array<{name: string, images: (string | File)[]}>
+    images: ['', '', '', ''] as (string | File)[]
   })
   const [showRejectPopup, setShowRejectPopup] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
@@ -255,6 +251,7 @@ export default function AdminDashboard() {
         const formattedHistory = data.map((entry: any) => ({
           date: new Date(entry.created_at).toLocaleString(),
           rewardName: entry.reward_name,
+          model: entry.reward_model || '',
           category: entry.reward_category || 'N/A',
           quantityAdded: entry.quantity_added,
           admin: entry.admin_user
@@ -413,8 +410,8 @@ export default function AdminDashboard() {
 
   const handleCancelEdit = () => {
     setEditingId(null)
-    setEditValues({ name: '', points: '', category: '', quantity: '', variantType: '', variantOptions: '', galleries: {} })
-    setEditingGalleries({})
+    setEditValues({ name: '', points: '', category: '', quantity: '', images: [] })
+    setEditingImages(['', '', '', ''])
   }
 
   // New form handlers
@@ -424,12 +421,11 @@ export default function AdminDashboard() {
       name: '',
       model: '',
       description: '',
-      category: categories[0] || 'Gadget',
-      variantType: variantTypes[0] || 'color',
+      category: categories[0]?.name || 'Gadget',
       points: '',
       quantity: '',
       tier: 'bronze',
-      variants: []
+      images: ['', '', '', '']
     })
     setShowRewardForm(true)
   }
@@ -437,30 +433,17 @@ export default function AdminDashboard() {
   const handleOpenEditForm = (reward: any) => {
     setFormMode('edit')
     setEditingId(reward.id)
-    const variants = reward.variants?.options || []
-    const galleries = reward.galleries || {}
     setFormData({
       name: reward.name,
       model: reward.model || '',
-      description: '', // Add description field to reward if needed
+      description: reward.description || '',
       category: reward.category,
-      variantType: reward.variants?.type || 'color',
       points: reward.points.toString(),
       quantity: reward.quantity?.toString() || '0',
       tier: (reward as any).tier || 'bronze',
-      variants: variants.map((v: string) => ({
-        name: v,
-        images: galleries[v] || ['', '', '', '']
-      }))
+      images: reward.images || ['', '', '', '']
     })
     setShowRewardForm(true)
-  }
-
-  const handleAddVariant = () => {
-    setFormData({
-      ...formData,
-      variants: [...formData.variants, { name: '', images: ['', '', '', ''] }]
-    })
   }
 
   const downloadCSV = () => {
@@ -535,21 +518,10 @@ export default function AdminDashboard() {
     document.body.removeChild(link)
   }
 
-  const handleRemoveVariant = (index: number) => {
-    setFormData({
-      ...formData,
-      variants: formData.variants.filter((_, i) => i !== index)
-    })
-  }
-
-  const handleVariantChange = (index: number, field: 'name' | 'images', value: any) => {
-    const updatedVariants = [...formData.variants]
-    if (field === 'name') {
-      updatedVariants[index].name = value
-    } else {
-      updatedVariants[index].images = value
-    }
-    setFormData({ ...formData, variants: updatedVariants })
+  const handleImageChange = (index: number, value: string | File) => {
+    const updatedImages = [...formData.images]
+    updatedImages[index] = value
+    setFormData({ ...formData, images: updatedImages })
   }
 
   const handleAddCategory = async () => {
@@ -579,59 +551,42 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleAddVariantType = () => {
-    if (newVariantTypeName.trim() && !variantTypes.includes(newVariantTypeName.trim())) {
-      setVariantTypes([...variantTypes, newVariantTypeName.trim()])
-      setNewVariantTypeName('')
-      setShowAddVariantType(false)
-    }
-  }
-
   const handleSubmitRewardForm = async (e: React.FormEvent) => {
     e.preventDefault()
     
     try {
       // Upload files and get URLs
-      const galleries: Record<string, string[]> = {}
+      const imageUrls: string[] = []
       
-      for (const variant of formData.variants) {
-        if (!variant.name) continue
-        
-        const imageUrls: string[] = []
-        for (const img of variant.images) {
-          if (!img) {
-            imageUrls.push('')
-            continue
-          }
-          
-          if (typeof img === 'string') {
-            imageUrls.push(img) // Already a URL
-          } else {
-            // Upload file
-            const uploadFormData = new FormData()
-            uploadFormData.append('file', img)
-            
-            const uploadRes = await fetch('/api/upload', {
-              method: 'POST',
-              headers: {
-                'x-csrf-token': csrfToken
-              },
-              body: uploadFormData
-            })
-            
-            if (!uploadRes.ok) {
-              const errorData = await uploadRes.json()
-              throw new Error(errorData.error || 'Failed to upload image')
-            }
-            const {url} = await uploadRes.json()
-            imageUrls.push(url)
-          }
+      for (const img of formData.images) {
+        if (!img) {
+          imageUrls.push('')
+          continue
         }
         
-        galleries[variant.name] = imageUrls.filter(url => url.trim() !== '')
+        if (typeof img === 'string') {
+          imageUrls.push(img) // Already a URL
+        } else {
+          // Upload file
+          const uploadFormData = new FormData()
+          uploadFormData.append('file', img)
+          
+          const uploadRes = await fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+              'x-csrf-token': csrfToken
+            },
+            body: uploadFormData
+          })
+          
+          if (!uploadRes.ok) {
+            const errorData = await uploadRes.json()
+            throw new Error(errorData.error || 'Failed to upload image')
+          }
+          const {url} = await uploadRes.json()
+          imageUrls.push(url)
+        }
       }
-      
-      const variantOptions = formData.variants.map(v => v.name).join(', ')
 
       if (formMode === 'add') {
         const response = await fetch('/api/admin/rewards', {
@@ -643,13 +598,12 @@ export default function AdminDashboard() {
           body: JSON.stringify({
             name: formData.name,
             model: formData.model,
+            description: formData.description,
             points: parseInt(formData.points) || 0,
             category: formData.category,
             quantity: 0,
-            variantType: formData.variantType,
-            variantOptions,
             tier: formData.tier,
-            galleries
+            images: imageUrls
           })
         })
         if (response.ok) {
@@ -669,13 +623,12 @@ export default function AdminDashboard() {
             id: editingId,
             name: formData.name,
             model: formData.model,
+            description: formData.description,
             points: parseInt(formData.points) || 0,
             category: formData.category,
             tier: formData.tier,
             quantity: parseInt(formData.quantity) || 0,
-            variantType: formData.variantType,
-            variantOptions,
-            galleries
+            images: imageUrls
           })
         })
         if (response.ok) {
@@ -809,6 +762,7 @@ export default function AdminDashboard() {
           body: JSON.stringify({
             reward_id: rewardId,
             reward_name: reward?.name,
+            reward_model: (reward as any)?.model || '',
             reward_category: (reward as any)?.category || 'N/A',
             quantity_added: parseInt(quantity),
             admin_user: 'Admin'
@@ -1481,9 +1435,8 @@ export default function AdminDashboard() {
                 const paginatedRewards = filteredRewards.slice(startIndex, endIndex)
                 
                 return paginatedRewards.map((item) => {
-                const galleries = (item as any).galleries || {}
-                const firstVariant = (item as any).variants?.options?.[0] || ''
-                const firstImage = galleries[firstVariant]?.[0] || ''
+                const images = (item as any).images || []
+                const firstImage = images[0] || ''
                 
                 return (
                 <div key={item.id} className="flex flex-col items-center rounded-2xl p-5 shadow-2xl border-2 border-yellow-400" style={{background: 'linear-gradient(180deg, #FFB300 0%, #FF9800 100%)'}}>
@@ -1637,6 +1590,7 @@ export default function AdminDashboard() {
                     <thead className="bg-yellow-700 flex-shrink-0">
                       <tr className="flex">
                         <th className="px-4 py-2 text-left text-sm font-semibold text-yellow-100 flex-1">Brand Name</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-yellow-100 flex-1">Item Model</th>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-yellow-100 flex-1">Category</th>
                         <th 
                           className="px-4 py-2 text-left text-sm font-semibold text-yellow-100 cursor-pointer hover:bg-yellow-600 flex-1 transition"
@@ -1682,6 +1636,7 @@ export default function AdminDashboard() {
                           return (
                             <tr key={reward.id} className="border-b border-gray-700 hover:bg-gray-800 flex items-center">
                               <td className="px-4 py-2 text-yellow-100 text-sm flex-1">{reward.name}</td>
+                              <td className="px-4 py-2 text-gray-400 text-sm flex-1">{(reward as any).model || 'N/A'}</td>
                               <td className="px-4 py-2 text-yellow-100 text-sm flex-1">{(reward as any).category || 'N/A'}</td>
                               <td className={`px-4 py-2 text-sm flex-1 ${isLowStock ? 'text-red-500 font-semibold' : 'text-yellow-100'}`}>
                                 <span className={isLowStock ? 'drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]' : ''}>
@@ -1801,7 +1756,8 @@ export default function AdminDashboard() {
                     <thead className="bg-yellow-700 flex-shrink-0">
                       <tr className="flex">
                         <th className="px-4 py-2 text-left text-sm font-semibold text-yellow-100 flex-1">Date</th>
-                        <th className="px-4 py-2 text-left text-sm font-semibold text-yellow-100 flex-1">Reward</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-yellow-100 flex-1">Brand Name</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-yellow-100 flex-1">Item Model</th>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-yellow-100 flex-1">Category</th>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-yellow-100 flex-1">Quantity Added</th>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-yellow-100 flex-1">Admin</th>
@@ -1834,7 +1790,7 @@ export default function AdminDashboard() {
                         if (filteredHistory.length === 0) {
                           return (
                             <tr className="border-b border-gray-700 flex items-center">
-                              <td className="px-4 py-2 text-gray-400 text-sm flex-1" colSpan={5}>No restocking history yet</td>
+                              <td className="px-4 py-2 text-gray-400 text-sm flex-1" colSpan={6}>No restocking history yet</td>
                             </tr>
                           )
                         }
@@ -1847,6 +1803,7 @@ export default function AdminDashboard() {
                           <tr key={index} className="border-b border-gray-700 flex items-center">
                             <td className="px-4 py-2 text-yellow-100 text-sm flex-1">{entry.date}</td>
                             <td className="px-4 py-2 text-yellow-100 text-sm flex-1">{entry.rewardName}</td>
+                            <td className="px-4 py-2 text-gray-400 text-sm flex-1">{entry.model || 'N/A'}</td>
                             <td className="px-4 py-2 text-yellow-100 text-sm flex-1">{entry.category}</td>
                             <td className="px-4 py-2 text-yellow-100 text-sm flex-1">+{entry.quantityAdded}</td>
                             <td className="px-4 py-2 text-yellow-100 text-sm flex-1">{entry.admin}</td>
@@ -2323,67 +2280,78 @@ export default function AdminDashboard() {
             <form onSubmit={handleSubmitRewardForm} className="space-y-6">
               {/* Gallery Upload Section */}
               <div className="bg-[#23272f] p-6 rounded-lg border border-yellow-600">
-                <h3 className="text-yellow-400 font-bold text-lg mb-4">📸 Gallery Images (per variant)</h3>
-                {formData.variants.length > 0 ? (
-                  <div className="space-y-4">
-                    {formData.variants.map((variant, vIndex) => (
-                      <div key={vIndex} className="bg-[#2a2e36] p-4 rounded-lg border border-gray-600">
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="text-white font-semibold">{variant.name || `Variant ${vIndex + 1}`}</span>
+                <h3 className="text-yellow-400 font-bold text-lg mb-4">📸 Gallery Images</h3>
+                <p className="text-gray-400 text-sm mb-4">Upload up to 4 images for this reward</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {[0, 1, 2, 3].map((imgIndex) => {
+                    const img = formData.images[imgIndex]
+                    const hasImage = img && typeof img === 'object' || (typeof img === 'string' && img.length > 0)
+                    const previewUrl = hasImage ? (typeof img === 'string' ? img : URL.createObjectURL(img as File)) : null
+                    
+                    return (
+                      <div key={imgIndex} className="relative">
+                        <label className="block text-gray-300 font-medium text-sm mb-2">Image {imgIndex + 1}</label>
+                        {previewUrl ? (
+                          <div className="relative group">
+                            <img 
+                              src={previewUrl} 
+                              alt={`Preview ${imgIndex + 1}`} 
+                              className="w-full h-32 object-cover rounded-lg border-2 border-gray-600"
+                              onError={(e) => e.currentTarget.style.display = 'none'} 
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const input = document.getElementById(`file-input-${imgIndex}`) as HTMLInputElement
+                                  input?.click()
+                                }}
+                                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-xs transition"
+                              >
+                                Change
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleImageChange(imgIndex, '')}
+                                className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold text-xs transition"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
                           <button
                             type="button"
-                            onClick={() => handleRemoveVariant(vIndex)}
-                            className="text-red-400 hover:text-red-300 text-sm"
+                            onClick={() => {
+                              const input = document.getElementById(`file-input-${imgIndex}`) as HTMLInputElement
+                              input?.click()
+                            }}
+                            className="w-full h-32 border-2 border-dashed border-gray-600 hover:border-yellow-500 rounded-lg flex flex-col items-center justify-center gap-2 bg-[#1a1d24] hover:bg-[#2a2e36] transition-colors group"
                           >
-                            Remove
+                            <svg className="w-8 h-8 text-gray-500 group-hover:text-yellow-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span className="text-gray-400 group-hover:text-yellow-400 text-xs font-medium transition-colors">
+                              Click to upload
+                            </span>
                           </button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          {variant.images.map((img, imgIndex) => {
-                            const previewUrl = img ? (typeof img === 'string' ? img : URL.createObjectURL(img)) : ''
-                            
-                            return (
-                              <div key={imgIndex}>
-                                <label className="block text-gray-400 text-xs mb-1">Image {imgIndex + 1}</label>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0]
-                                    if (file) {
-                                      const newImages = [...variant.images]
-                                      newImages[imgIndex] = file
-                                      handleVariantChange(vIndex, 'images', newImages)
-                                    }
-                                  }}
-                                  className="w-full px-2 py-1 bg-[#1a1d24] text-white rounded border border-gray-600 focus:outline-none focus:border-yellow-500 text-xs file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-yellow-600 file:text-white hover:file:bg-yellow-700"
-                                />
-                                {previewUrl && (
-                                  <div className="relative mt-2">
-                                    <img src={previewUrl} alt={`Preview ${imgIndex + 1}`} className="w-full h-20 object-cover rounded" onError={(e) => e.currentTarget.style.display = 'none'} />
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const newImages = [...variant.images]
-                                        newImages[imgIndex] = ''
-                                        handleVariantChange(vIndex, 'images', newImages)
-                                      }}
-                                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
-                                    >
-                                      ×
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            )
-                          })}
-                        </div>
+                        )}
+                        <input
+                          id={`file-input-${imgIndex}`}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                              handleImageChange(imgIndex, file)
+                            }
+                          }}
+                          className="hidden"
+                        />
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-400 text-sm">Add variants below to upload gallery images</p>
-                )}
+                    )
+                  })}
+                </div>
               </div>
 
               {/* Brand Name */}
@@ -2468,95 +2436,6 @@ export default function AdminDashboard() {
                         ✕
                       </button>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Variant Type with Add Function */}
-              <div>
-                <label className="block text-yellow-400 font-semibold mb-2">Variant Type *</label>
-                <div className="flex gap-2">
-                  <select
-                    value={formData.variantType}
-                    onChange={(e) => setFormData({...formData, variantType: e.target.value})}
-                    className="flex-1 px-4 py-3 bg-[#23272f] text-white rounded-lg border border-yellow-600 focus:outline-none focus:border-yellow-400 capitalize"
-                    required
-                  >
-                    {variantTypes.map(type => (
-                      <option key={type} value={type} className="capitalize">{type}</option>
-                    ))}
-                  </select>
-                  {!showAddVariantType ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowAddVariantType(true)}
-                      className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition"
-                    >
-                      + Add
-                    </button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="New variant type"
-                        value={newVariantTypeName}
-                        onChange={(e) => setNewVariantTypeName(e.target.value)}
-                        className="px-3 py-2 bg-[#23272f] text-white rounded-lg border border-green-500 focus:outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddVariantType}
-                        className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold"
-                      >
-                        ✓
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setShowAddVariantType(false); setNewVariantTypeName(''); }}
-                        className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-bold"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Variant Options - Shopify Style */}
-              <div className="bg-[#23272f] p-6 rounded-lg border border-yellow-600">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-yellow-400 font-bold text-lg">Variant Options</h3>
-                  <button
-                    type="button"
-                    onClick={handleAddVariant}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition text-sm"
-                  >
-                    + Add Variant
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  {formData.variants.map((variant, index) => (
-                    <div key={index} className="flex items-center gap-3 bg-[#2a2e36] p-3 rounded-lg">
-                      <span className="text-gray-400 font-semibold min-w-[80px]">Option {index + 1}:</span>
-                      <input
-                        type="text"
-                        placeholder={`e.g., ${formData.variantType === 'color' ? 'Black' : formData.variantType === 'size' ? 'Medium' : '100'}`}
-                        value={variant.name}
-                        onChange={(e) => handleVariantChange(index, 'name', e.target.value)}
-                        className="flex-1 px-3 py-2 bg-[#1a1d24] text-white rounded border border-gray-600 focus:outline-none focus:border-yellow-500"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveVariant(index)}
-                        className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-bold text-sm"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                  {formData.variants.length === 0 && (
-                    <p className="text-gray-400 text-sm text-center py-4">No variants added yet. Click "Add Variant" to start.</p>
                   )}
                 </div>
               </div>

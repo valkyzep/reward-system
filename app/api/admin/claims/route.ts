@@ -13,8 +13,7 @@ export async function GET(request: NextRequest) {
       .from('claims')
       .select(`
         *,
-        reward:rewards(name, points),
-        variant:reward_variants(option_name)
+        reward:rewards(name, points)
       `)
       .order('created_at', { ascending: false })
 
@@ -39,7 +38,6 @@ export async function GET(request: NextRequest) {
       walletNumber: claim.ewallet_account || 'N/A',
       status: claim.status,
       reason: claim.rejection_reason || '',
-      variant: claim.variant?.option_name || 'N/A',
       adminUser: claim.admin_user || 'N/A',
       timestamp: new Date(claim.created_at).toLocaleString('en-US', {
         year: 'numeric',

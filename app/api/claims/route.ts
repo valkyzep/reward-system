@@ -17,7 +17,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const {
       rewardId,
-      variantOption,
       username,
       fullName,
       phoneNumber,
@@ -45,27 +44,12 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Get variant_id if variant is selected
-    let variantId = null
-    if (variantOption) {
-      const { data: variant, error: variantError } = await supabase
-        .from('reward_variants')
-        .select('id')
-        .eq('reward_id', rewardId)
-        .eq('option_name', variantOption)
-        .single()
-
-      if (variantError) throw variantError
-      variantId = variant.id
-    }
-
     // Insert claim
     const { data: claim, error: claimError } = await supabase
       .from('claims')
       .insert({
         claim_id: claimId,
         reward_id: rewardId,
-        variant_id: variantId,
         username,
         full_name: fullName,
         phone_number: phoneNumber,
