@@ -637,7 +637,7 @@ export default function Home() {
                         transition={{ duration: 0.4, ease: "easeInOut" }}
                         className="absolute inset-0 flex items-center"
                       >
-                        {rewardsClaimedCount}
+                        {rewardsClaimedCount.toLocaleString()}
                       </motion.div>
                     </AnimatePresence>
                   </div>
