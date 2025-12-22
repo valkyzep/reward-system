@@ -152,7 +152,7 @@ export default function AdminDashboard() {
       } else {
         // Fetch CSRF token first, then load data
         refreshCsrfToken()
-          .then(() => Promise.all([fetchClaims(), fetchRewards(), fetchCategories(), fetchRestockingHistory()]))
+          .then(() => Promise.all([fetchClaims(), fetchRewards(), fetchCategories(), fetchRestockingHistory(), loadBannerSettings()]))
           .finally(() => setIsLoading(false))
           .catch(err => console.error('Failed to initialize dashboard:', err))
       }
@@ -330,11 +330,19 @@ export default function AdminDashboard() {
         formData.append('file', topBannerImage)
         const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
+          headers: {
+            'x-csrf-token': csrfToken
+          },
           body: formData,
         })
         if (uploadResponse.ok) {
           const uploadData = await uploadResponse.json()
           topBannerUrl = uploadData.url
+        } else {
+          const errorData = await uploadResponse.json()
+          console.error('Top banner upload failed:', uploadResponse.status, errorData)
+          alert(`Failed to upload top banner: ${errorData.error || 'Unknown error'}`)
+          throw new Error('Top banner upload failed')
         }
       }
 
@@ -344,11 +352,19 @@ export default function AdminDashboard() {
         formData.append('file', bottomBanner1Image)
         const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
+          headers: {
+            'x-csrf-token': csrfToken
+          },
           body: formData,
         })
         if (uploadResponse.ok) {
           const uploadData = await uploadResponse.json()
           banner1Url = uploadData.url
+        } else {
+          const errorData = await uploadResponse.json()
+          console.error('Bottom banner 1 upload failed:', uploadResponse.status, errorData)
+          alert(`Failed to upload bottom banner 1: ${errorData.error || 'Unknown error'}`)
+          throw new Error('Bottom banner 1 upload failed')
         }
       }
 
@@ -358,11 +374,19 @@ export default function AdminDashboard() {
         formData.append('file', bottomBanner2Image)
         const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
+          headers: {
+            'x-csrf-token': csrfToken
+          },
           body: formData,
         })
         if (uploadResponse.ok) {
           const uploadData = await uploadResponse.json()
           banner2Url = uploadData.url
+        } else {
+          const errorData = await uploadResponse.json()
+          console.error('Bottom banner 2 upload failed:', uploadResponse.status, errorData)
+          alert(`Failed to upload bottom banner 2: ${errorData.error || 'Unknown error'}`)
+          throw new Error('Bottom banner 2 upload failed')
         }
       }
 
@@ -372,11 +396,19 @@ export default function AdminDashboard() {
         formData.append('file', bottomBanner3Image)
         const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
+          headers: {
+            'x-csrf-token': csrfToken
+          },
           body: formData,
         })
         if (uploadResponse.ok) {
           const uploadData = await uploadResponse.json()
           banner3Url = uploadData.url
+        } else {
+          const errorData = await uploadResponse.json()
+          console.error('Bottom banner 3 upload failed:', uploadResponse.status, errorData)
+          alert(`Failed to upload bottom banner 3: ${errorData.error || 'Unknown error'}`)
+          throw new Error('Bottom banner 3 upload failed')
         }
       }
 
@@ -390,11 +422,19 @@ export default function AdminDashboard() {
           formData.append('file', banner.image)
           const uploadResponse = await fetch('/api/upload', {
             method: 'POST',
+            headers: {
+              'x-csrf-token': csrfToken
+            },
             body: formData,
           })
           if (uploadResponse.ok) {
             const uploadData = await uploadResponse.json()
             bannerUrl = uploadData.url
+          } else {
+            const errorData = await uploadResponse.json()
+            console.error('Additional banner upload failed:', uploadResponse.status, errorData)
+            alert(`Failed to upload additional banner: ${errorData.error || 'Unknown error'}`)
+            throw new Error('Additional banner upload failed')
           }
         }
         if (bannerUrl) {

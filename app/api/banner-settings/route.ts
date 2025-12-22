@@ -42,24 +42,54 @@ export async function PUT(request: NextRequest) {
       carousel_interval
     } = body
 
-    // Update the banner settings
-    const { data, error } = await supabase
+    // Check if settings exist
+    const { data: existingData } = await supabase
       .from('banner_settings')
-      .update({
-        top_banner_image,
-        bottom_banner_images,
-        bottom_banner_links,
-        carousel_interval,
-        updated_at: new Date().toISOString()
-      })
+      .select('*')
       .eq('setting_key', 'main')
-      .select()
       .single()
+
+    let data, error
+
+    if (existingData) {
+      // Update existing settings
+      const result = await supabase
+        .from('banner_settings')
+        .update({
+          top_banner_image,
+          bottom_banner_images,
+          bottom_banner_links,
+          carousel_interval,
+          updated_at: new Date().toISOString()
+        })
+        .eq('setting_key', 'main')
+        .select()
+        .single()
+      
+      data = result.data
+      error = result.error
+    } else {
+      // Insert new settings
+      const result = await supabase
+        .from('banner_settings')
+        .insert({
+          setting_key: 'main',
+          top_banner_image,
+          bottom_banner_images,
+          bottom_banner_links,
+          carousel_interval
+        })
+        .select()
+        .single()
+      
+      data = result.data
+      error = result.error
+    }
 
     if (error) {
       console.error('Error updating banner settings:', error)
       return NextResponse.json(
-        { error: 'Failed to update banner settings' },
+        { error: 'Failed to update banner settings', details: error.message },
         { status: 500 }
       )
     }

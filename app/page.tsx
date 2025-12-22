@@ -54,6 +54,7 @@ export default function Home() {
   const [bannersLoaded, setBannersLoaded] = useState(false)
   
   // Banner images and links from database
+  const [topBannerImage, setTopBannerImage] = useState('/Bannertop.png')
   const [bannerImages, setBannerImages] = useState(['/Bannertop.png', '/Bannertop.png', '/Bannertop.png'])
   const [bannerLinks, setBannerLinks] = useState(['https://www.facebook.com', 'https://www.tiktok.com', 'https://www.instagram.com'])
   const [carouselIntervalSeconds, setCarouselIntervalSeconds] = useState(5)
@@ -84,6 +85,9 @@ export default function Home() {
         const response = await fetch('/api/banner-settings')
         if (response.ok) {
           const data = await response.json()
+          if (data.top_banner_image) {
+            setTopBannerImage(data.top_banner_image)
+          }
           if (data.bottom_banner_images && data.bottom_banner_images.length > 0) {
             setBannerImages(data.bottom_banner_images)
           }
@@ -689,7 +693,7 @@ export default function Home() {
         <div className="w-full relative">
           <div className="banner-container relative h-32 sm:h-48 md:h-64 overflow-hidden flex items-center justify-center">
             <img 
-              src="/Bannertop.png" 
+              src={topBannerImage} 
               alt="Banner" 
               className="w-full h-full object-cover"
             />
