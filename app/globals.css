@@ -785,7 +785,7 @@ body {
     flex: 0 0 35% !important;
     width: 35% !important;
     max-width: 35% !important;
-    justify-content: flex-end !important;
+    
   }
   
   .popup-claiming-process {
@@ -1360,6 +1360,28 @@ body {
   .welcome-modal-stats-container {
     gap: 8px !important;
   }
+
+  /* Bottom Banner Carousel - Tablet */
+  .banner-container {
+    width: 90% !important;
+    max-width: 700px !important;
+  }
+
+  .banner-container img {
+    max-height: 150px !important;
+    object-fit: cover !important;
+  }
+
+  .banner-container .absolute.top-2.right-2 {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 18px !important;
+  }
+
+  .banner-container .absolute.bottom-2 button {
+    width: 8px !important;
+    height: 8px !important;
+  }
 }
 
 /* ============================================
@@ -1743,7 +1765,7 @@ body {
     flex: 0 0 35% !important;
     width: 35% !important;
     max-width: 35% !important;
-    justify-content: flex-end !important;
+    
   }
   
   /* 7. Claiming Process */
@@ -2192,5 +2214,60 @@ body {
   
   .mobile-filter-text {
     font-size: 10px !important;
+  }
+
+  /* Bottom Banner Carousel - Mobile */
+  .banner-container {
+    width: 95% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+  }
+
+  .banner-container img {
+    max-height: 120px !important;
+    object-fit: cover !important;
+  }
+
+  /* Close button - force square/circle */
+  .banner-container button.absolute {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .banner-container .absolute.top-2.right-2 {
+    top: 0px !important;
+    right: 4px !important;
+    font-size: 16px !important;
+    border-radius: 50% !important;
+  }
+
+  .banner-container .absolute.bottom-2 {
+    bottom: 4px !important;
+    gap: 6px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: auto !important;
+  }
+
+  /* Indicator dots - force square/circle */
+  .banner-container .absolute.bottom-2 button {
+    width: 8px !important;
+    height: 8px !important;
+    min-width: 8px !important;
+    min-height: 8px !important;
+    max-width: 8px !important;
+    max-height: 8px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    padding: 0 !important;
   }
 }

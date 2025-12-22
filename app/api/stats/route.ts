@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
-// GET - Fetch current stats with calculated count based on time
+// GET - Fetch current stats with auto-increment logic
 export async function GET() {
   try {
     const supabase = await getSupabaseAdmin()
@@ -17,8 +17,10 @@ export async function GET() {
       const { data: newStats, error: insertError } = await supabase
         .from('stats')
         .insert({
-          rewards_claimed_base: 0,
-          last_updated: new Date().toISOString()
+          rewards_claimed: 0,
+          active_players: 500,
+          last_rewards_increment: new Date().toISOString(),
+          last_players_increment: new Date().toISOString()
         })
         .select()
         .single()
@@ -27,28 +29,65 @@ export async function GET() {
       stats = newStats
     }
 
-    // Calculate current count based on time elapsed
-    const lastUpdated = new Date(stats.last_updated).getTime()
+    // Auto-increment logic for rewards claimed (every 2 seconds, add 1-5)
+    const lastRewardsUpdate = new Date(stats.last_rewards_increment).getTime()
     const now = Date.now()
-    const secondsElapsed = Math.floor((now - lastUpdated) / 1000)
-    const intervalsElapsed = Math.floor(secondsElapsed / 2) // Every 2 seconds
-    const incrementsToAdd = intervalsElapsed * 3 // Average 3 per interval (1-5 random)
+    const rewardsSecondsElapsed = Math.floor((now - lastRewardsUpdate) / 1000)
+    const rewardsIntervals = Math.floor(rewardsSecondsElapsed / 2)
     
-    const currentCount = stats.rewards_claimed_base + incrementsToAdd
+    // Auto-increment logic for active players (every 3 seconds, change -5 to +5)
+    const lastPlayersUpdate = new Date(stats.last_players_increment).getTime()
+    const playersSecondsElapsed = Math.floor((now - lastPlayersUpdate) / 1000)
+    const playersIntervals = Math.floor(playersSecondsElapsed / 3)
+    
+    let newRewardsClaimed = stats.rewards_claimed
+    let newActivePlayers = stats.active_players
+
+    // Update rewards if interval passed
+    if (rewardsIntervals > 0) {
+      for (let i = 0; i < Math.min(rewardsIntervals, 10); i++) {
+        newRewardsClaimed += Math.floor(Math.random() * 5) + 1
+      }
+    }
+
+    // Update players if interval passed
+    if (playersIntervals > 0) {
+      for (let i = 0; i < Math.min(playersIntervals, 10); i++) {
+        const change = Math.floor(Math.random() * 11) - 5
+        newActivePlayers += change
+        if (newActivePlayers < 100) newActivePlayers = 100
+        if (newActivePlayers > 999) newActivePlayers = 999
+      }
+    }
+
+    // Save updated values back to database if changed
+    if (rewardsIntervals > 0 || playersIntervals > 0) {
+      await supabase
+        .from('stats')
+        .update({
+          rewards_claimed: newRewardsClaimed,
+          active_players: newActivePlayers,
+          last_rewards_increment: rewardsIntervals > 0 ? new Date().toISOString() : stats.last_rewards_increment,
+          last_players_increment: playersIntervals > 0 ? new Date().toISOString() : stats.last_players_increment
+        })
+        .eq('id', stats.id)
+    }
 
     return NextResponse.json({
-      rewardsClaimed: currentCount,
-      activePlayers: stats.active_players || 500,
-      baseCount: stats.rewards_claimed_base,
-      lastUpdated: stats.last_updated
+      rewardsClaimed: newRewardsClaimed,
+      activePlayers: newActivePlayers
     })
   } catch (error) {
     console.error('Error fetching stats:', error)
-    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to fetch stats',
+      rewardsClaimed: 0,
+      activePlayers: 500
+    }, { status: 500 })
   }
 }
 
-// POST - Update the base count (called periodically from client)
+// POST - Manual update (for admin purposes)
 export async function POST(request: Request) {
   try {
     const supabase = await getSupabaseAdmin()
@@ -57,21 +96,22 @@ export async function POST(request: Request) {
     const { error } = await supabase
       .from('stats')
       .update({
-        rewards_claimed_base: rewardsClaimed,
+        rewards_claimed: rewardsClaimed,
         active_players: activePlayers,
-        last_updated: new Date().toISOString()
+        last_rewards_increment: new Date().toISOString(),
+        last_players_increment: new Date().toISOString()
       })
-      .eq('id', 1) // Assuming single stats row with id 1
+      .eq('id', 1)
 
     if (error) {
-      // If no row exists, insert it
       await supabase
         .from('stats')
         .insert({
           id: 1,
-          rewards_claimed_base: rewardsClaimed,
+          rewards_claimed: rewardsClaimed,
           active_players: activePlayers,
-          last_updated: new Date().toISOString()
+          last_rewards_increment: new Date().toISOString(),
+          last_players_increment: new Date().toISOString()
         })
     }
 

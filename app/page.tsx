@@ -49,6 +49,14 @@ export default function Home() {
   const [rewardsClaimedCount, setRewardsClaimedCount] = useState(0)
   const [activePlayersCount, setActivePlayersCount] = useState(500) // Represents 500K players
   const [statsLoaded, setStatsLoaded] = useState(false)
+  const [showBottomBanner, setShowBottomBanner] = useState(true)
+  const [bannerIndex, setBannerIndex] = useState(0)
+  const [bannersLoaded, setBannersLoaded] = useState(false)
+  
+  // Banner images and links from database
+  const [bannerImages, setBannerImages] = useState(['/Bannertop.png', '/Bannertop.png', '/Bannertop.png'])
+  const [bannerLinks, setBannerLinks] = useState(['https://www.facebook.com', 'https://www.tiktok.com', 'https://www.instagram.com'])
+  const [carouselIntervalSeconds, setCarouselIntervalSeconds] = useState(5)
 
   // Fetch initial stats from database
   useEffect(() => {
@@ -70,69 +78,88 @@ export default function Home() {
         setStatsLoaded(true)
       }
     }
+    
+    const fetchBannerSettings = async () => {
+      try {
+        const response = await fetch('/api/banner-settings')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.bottom_banner_images && data.bottom_banner_images.length > 0) {
+            setBannerImages(data.bottom_banner_images)
+          }
+          if (data.bottom_banner_links && data.bottom_banner_links.length > 0) {
+            setBannerLinks(data.bottom_banner_links)
+          }
+          if (data.carousel_interval) {
+            setCarouselIntervalSeconds(data.carousel_interval)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching banner settings:', error)
+      }
+    }
+    
     fetchStats()
+    fetchBannerSettings()
   }, [])
 
-  // Incrementing counter for rewards claimed - adds random 1-5 every 2 seconds
-  useEffect(() => {
-    if (showWelcomeModal && statsLoaded) {
-      const interval = setInterval(() => {
-        setRewardsClaimedCount(prev => {
-          const newCount = prev + Math.floor(Math.random() * 5) + 1
-          // Update database every 10 increments
-          if (newCount % 10 === 0) {
-            fetch('/api/stats', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                rewardsClaimed: newCount,
-                activePlayers: activePlayersCount
-              })
-            }).catch(err => console.error('Error updating stats:', err))
-          }
-          return newCount
-        })
-      }, 2000)
-      
-      return () => clearInterval(interval)
-    }
-  }, [showWelcomeModal, statsLoaded, activePlayersCount])
-
-  // Active players counter - add random -5 to 5 between 100-999 every 3 seconds
+  // Poll database for updated stats every 2 seconds (syncs all devices)
   useEffect(() => {
     if (statsLoaded) {
-      const interval = setInterval(() => {
-        setActivePlayersCount(prev => {
-          const change = Math.floor(Math.random() * 11) - 5 // Random -5 to 5
-          let newCount = prev + change
+      const interval = setInterval(async () => {
+        try {
+          const response = await fetch('/api/stats')
+          const data = await response.json()
+          setRewardsClaimedCount(data.rewardsClaimed || 0)
           
-          // Keep within 100-999 range
-          if (newCount < 100) newCount = 100
-          if (newCount > 999) newCount = 999
-          
-          return newCount
-        })
-      }, 3000)
+          let players = data.activePlayers || 500
+          if (players < 100) players = 100
+          if (players > 999) players = 999
+          setActivePlayersCount(players)
+        } catch (error) {
+          console.error('Error polling stats:', error)
+        }
+      }, 2000)
       
       return () => clearInterval(interval)
     }
   }, [statsLoaded])
 
-  // Save active players to database occasionally
+  // Auto-rotate banner carousel
   useEffect(() => {
-    if (statsLoaded && activePlayersCount >= 100 && activePlayersCount <= 999) {
-      if (Math.random() > 0.7) {
-        fetch('/api/stats', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            rewardsClaimed: rewardsClaimedCount,
-            activePlayers: activePlayersCount
-          })
-        }).catch(err => console.error('Error updating stats:', err))
+    if (showBottomBanner) {
+      const interval = setInterval(() => {
+        setBannerIndex(prev => (prev + 1) % bannerImages.length)
+      }, carouselIntervalSeconds * 1000)
+      return () => clearInterval(interval)
+    }
+  }, [showBottomBanner, bannerImages.length, carouselIntervalSeconds])
+
+  // Preload banner images to prevent flickering
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const preloadImages = async () => {
+      const imagePromises = bannerImages.map((src) => {
+        return new Promise((resolve, reject) => {
+          const img = window.Image ? new window.Image() : document.createElement('img')
+          img.onload = () => resolve(true)
+          img.onerror = () => reject(new Error(`Failed to load ${src}`))
+          img.src = src
+        })
+      })
+      
+      try {
+        await Promise.all(imagePromises)
+        setBannersLoaded(true)
+      } catch (error) {
+        console.error('Error preloading banner images:', error)
+        setBannersLoaded(true) // Show anyway if preload fails
       }
     }
-  }, [activePlayersCount, rewardsClaimedCount, statsLoaded])
+    
+    preloadImages()
+  }, [])
 
   // Disable scroll when welcome modal is open
   useEffect(() => {
@@ -561,9 +588,9 @@ export default function Home() {
                         <AnimatePresence mode="popLayout">
                           <motion.div
                             key={rewardsClaimedCount}
-                            initial={{ y: 20, opacity: 0 }}
+                            initial={{ y: 30, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: -20, opacity: 0 }}
+                            exit={{ y: -30, opacity: 0 }}
                             transition={{ duration: 0.4, ease: "easeInOut" }}
                             className="absolute inset-0 flex items-center justify-center"
                           >
@@ -578,9 +605,9 @@ export default function Home() {
                         <AnimatePresence mode="popLayout">
                           <motion.div
                             key={activePlayersCount}
-                            initial={{ y: 20, opacity: 0 }}
+                            initial={{ y: 30, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
-                            exit={{ y: -20, opacity: 0 }}
+                            exit={{ y: -30, opacity: 0 }}
                             transition={{ duration: 0.4, ease: "easeInOut" }}
                             className="absolute inset-0 flex items-center justify-center"
                           >
@@ -1802,6 +1829,74 @@ export default function Home() {
         </AnimatePresence>
       </main>
       </div>
+
+      {/* Bottom Banner - Sticky Carousel */}
+      {showBottomBanner && bannersLoaded && (
+        <div className="sticky bottom-0 w-full py-0 flex justify-center" style={{ zIndex: 60 }}>
+          <div className="banner-container relative overflow-hidden flex items-center justify-center" style={{ width: '80%', borderRadius: '10px' }}>
+            {/* Close Button */}
+            <button
+              onClick={() => setShowBottomBanner(false)}
+              className="absolute top-2 right-2 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white font-bold text-xl transition z-10"
+              aria-label="Close banner"
+            >
+              ×
+            </button>
+            
+            {/* Banner Carousel with Smooth Crossfade */}
+            <div className="relative w-full">
+              {bannerImages.map((image, idx) => (
+                <a
+                  key={idx}
+                  href={bannerLinks[idx]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full transition-opacity duration-[1500ms] ease-in-out"
+                  style={{ 
+                    position: idx === 0 ? 'relative' : 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    opacity: bannerIndex === idx ? 1 : 0,
+                    pointerEvents: bannerIndex === idx ? 'auto' : 'none',
+                    willChange: 'opacity',
+                    backfaceVisibility: 'hidden',
+                    WebkitBackfaceVisibility: 'hidden',
+                    transform: 'translateZ(0)',
+                    WebkitTransform: 'translateZ(0)'
+                  }}
+                >
+                  <img
+                    src={image}
+                    alt={`Banner ${idx + 1}`}
+                    className="w-full h-auto object-contain cursor-pointer"
+                    style={{ 
+                      borderRadius: '10px',
+                      display: 'block',
+                      backfaceVisibility: 'hidden',
+                      WebkitBackfaceVisibility: 'hidden'
+                    }}
+                  />
+                </a>
+              ))}
+            </div>
+            
+            {/* Indicator Dots */}
+            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
+              {bannerImages.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setBannerIndex(idx)}
+                  className={`w-2 h-2 rounded-full transition ${
+                    idx === bannerIndex ? 'bg-white' : 'bg-white/40 hover:bg-white/60'
+                  }`}
+                  aria-label={`Go to banner ${idx + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
         </>
       )}
     </div>

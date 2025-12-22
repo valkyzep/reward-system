@@ -25,6 +25,19 @@ export default function AdminDashboard() {
   const [showInventory, setShowInventory] = useState(false)
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [showActionHistory, setShowActionHistory] = useState(false)
+  const [showBannerSettings, setShowBannerSettings] = useState(false)
+  const [bannerSettingsTab, setBannerSettingsTab] = useState<'top' | 'bottom'>('top')
+  const [topBannerImage, setTopBannerImage] = useState<string | File>('')
+  const [bottomBanner1Image, setBottomBanner1Image] = useState<string | File>('')
+  const [bottomBanner2Image, setBottomBanner2Image] = useState<string | File>('')
+  const [bottomBanner3Image, setBottomBanner3Image] = useState<string | File>('')
+  const [bottomBanner1Link, setBottomBanner1Link] = useState('https://www.facebook.com')
+  const [bottomBanner2Link, setBottomBanner2Link] = useState('https://www.tiktok.com')
+  const [bottomBanner3Link, setBottomBanner3Link] = useState('https://www.instagram.com')
+  const [additionalBanners, setAdditionalBanners] = useState<Array<{id: number, image: string | File, link: string}>>([])
+  const [nextBannerId, setNextBannerId] = useState(4)
+  const [carouselInterval, setCarouselInterval] = useState(5)
+  const [isSavingBanners, setIsSavingBanners] = useState(false)
   const [rewardsList, setRewardsList] = useState<any[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValues, setEditValues] = useState({ name: '', points: '', category: '', quantity: '', images: [] as string[] })
@@ -132,7 +145,7 @@ export default function AdminDashboard() {
       if (storedToken) {
         setCsrfToken(storedToken)
         // Load data immediately with stored token
-        Promise.all([fetchClaims(), fetchRewards(), fetchCategories(), fetchRestockingHistory()])
+        Promise.all([fetchClaims(), fetchRewards(), fetchCategories(), fetchRestockingHistory(), loadBannerSettings()])
           .finally(() => setIsLoading(false))
         // Refresh token in background to ensure it's valid
         refreshCsrfToken().catch(err => console.error('Failed to refresh CSRF token:', err))
@@ -260,6 +273,165 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error fetching restocking history:', error)
+    }
+  }
+
+  // Load banner settings from database
+  const loadBannerSettings = async () => {
+    try {
+      const response = await fetch('/api/banner-settings')
+      if (response.ok) {
+        const data = await response.json()
+        setTopBannerImage(data.top_banner_image || '')
+        if (data.bottom_banner_images && data.bottom_banner_images.length >= 3) {
+          setBottomBanner1Image(data.bottom_banner_images[0] || '')
+          setBottomBanner2Image(data.bottom_banner_images[1] || '')
+          setBottomBanner3Image(data.bottom_banner_images[2] || '')
+          
+          // Load additional banners beyond the first 3
+          if (data.bottom_banner_images.length > 3) {
+            const additionalBannersData = []
+            for (let i = 3; i < data.bottom_banner_images.length; i++) {
+              additionalBannersData.push({
+                id: i + 1,
+                image: data.bottom_banner_images[i] || '',
+                link: data.bottom_banner_links?.[i] || ''
+              })
+            }
+            setAdditionalBanners(additionalBannersData)
+            setNextBannerId(data.bottom_banner_images.length + 1)
+          }
+        }
+        if (data.bottom_banner_links && data.bottom_banner_links.length >= 3) {
+          setBottomBanner1Link(data.bottom_banner_links[0] || 'https://www.facebook.com')
+          setBottomBanner2Link(data.bottom_banner_links[1] || 'https://www.tiktok.com')
+          setBottomBanner3Link(data.bottom_banner_links[2] || 'https://www.instagram.com')
+        }
+        setCarouselInterval(data.carousel_interval || 5)
+      }
+    } catch (error) {
+      console.error('Error loading banner settings:', error)
+    }
+  }
+
+  // Save banner settings to database
+  const saveBannerSettings = async () => {
+    setIsSavingBanners(true)
+    try {
+      // Upload images if they are File objects
+      let topBannerUrl = typeof topBannerImage === 'string' ? topBannerImage : ''
+      let banner1Url = typeof bottomBanner1Image === 'string' ? bottomBanner1Image : ''
+      let banner2Url = typeof bottomBanner2Image === 'string' ? bottomBanner2Image : ''
+      let banner3Url = typeof bottomBanner3Image === 'string' ? bottomBanner3Image : ''
+
+      // Upload top banner if it's a file
+      if (topBannerImage instanceof File) {
+        const formData = new FormData()
+        formData.append('file', topBannerImage)
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json()
+          topBannerUrl = uploadData.url
+        }
+      }
+
+      // Upload bottom banner 1 if it's a file
+      if (bottomBanner1Image instanceof File) {
+        const formData = new FormData()
+        formData.append('file', bottomBanner1Image)
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json()
+          banner1Url = uploadData.url
+        }
+      }
+
+      // Upload bottom banner 2 if it's a file
+      if (bottomBanner2Image instanceof File) {
+        const formData = new FormData()
+        formData.append('file', bottomBanner2Image)
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json()
+          banner2Url = uploadData.url
+        }
+      }
+
+      // Upload bottom banner 3 if it's a file
+      if (bottomBanner3Image instanceof File) {
+        const formData = new FormData()
+        formData.append('file', bottomBanner3Image)
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+        if (uploadResponse.ok) {
+          const uploadData = await uploadResponse.json()
+          banner3Url = uploadData.url
+        }
+      }
+
+      // Upload additional banners
+      const additionalBannerUrls: string[] = []
+      const additionalBannerLinks: string[] = []
+      for (const banner of additionalBanners) {
+        let bannerUrl = typeof banner.image === 'string' ? banner.image : ''
+        if (banner.image instanceof File) {
+          const formData = new FormData()
+          formData.append('file', banner.image)
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          })
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json()
+            bannerUrl = uploadData.url
+          }
+        }
+        if (bannerUrl) {
+          additionalBannerUrls.push(bannerUrl)
+          additionalBannerLinks.push(banner.link)
+        }
+      }
+
+      // Combine all banner images and links
+      const allBannerImages = [banner1Url, banner2Url, banner3Url, ...additionalBannerUrls]
+      const allBannerLinks = [bottomBanner1Link, bottomBanner2Link, bottomBanner3Link, ...additionalBannerLinks]
+
+      // Save banner settings to database
+      const response = await fetch('/api/banner-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          top_banner_image: topBannerUrl,
+          bottom_banner_images: allBannerImages,
+          bottom_banner_links: allBannerLinks,
+          carousel_interval: carouselInterval
+        })
+      })
+
+      if (response.ok) {
+        alert('Banner settings saved successfully!')
+        setShowBannerSettings(false)
+        // Reload the page to show updated banners
+        window.location.reload()
+      } else {
+        alert('Failed to save banner settings')
+      }
+    } catch (error) {
+      console.error('Error saving banner settings:', error)
+      alert('Error saving banner settings')
+    } finally {
+      setIsSavingBanners(false)
     }
   }
 
@@ -913,12 +1085,24 @@ export default function AdminDashboard() {
           <img src="/Time2Claim.png" alt="Time2Claim Logo" className="w-[140px]" />
           <span className="text-yellow-400 font-bold text-xl">Admin Dashboard</span>
         </div>
-        <button
-          onClick={handleLogout}
-          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition"
-        >
-          Logout
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowBannerSettings(true)}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Ads Banner Settings
+          </button>
+          <button
+            onClick={handleLogout}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold transition"
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -2610,9 +2794,408 @@ export default function AdminDashboard() {
               <p className="text-yellow-100 text-center mb-6 leading-relaxed">{errorMessage}</p>
               <button
                 onClick={() => setShowErrorModal(false)}
-                className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-bold shadow-lg transition w-full"
+                className="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold text-lg transition"
               >
-                OK
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Banner Settings Modal */}
+      {showBannerSettings && (
+        <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black bg-opacity-80 p-4" onClick={() => setShowBannerSettings(false)}>
+          <div className="bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-extrabold text-yellow-400">Banner Settings</h2>
+              <button
+                onClick={() => setShowBannerSettings(false)}
+                className="text-gray-400 hover:text-white text-3xl font-bold w-10 h-10 flex items-center justify-center"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-6 border-b border-gray-700">
+              <button
+                onClick={() => setBannerSettingsTab('top')}
+                className={`px-6 py-3 font-semibold transition relative ${
+                  bannerSettingsTab === 'top'
+                    ? 'text-yellow-400'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                Top Banner
+                {bannerSettingsTab === 'top' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-yellow-400 rounded-t" />
+                )}
+              </button>
+              <button
+                onClick={() => setBannerSettingsTab('bottom')}
+                className={`px-6 py-3 font-semibold transition relative ${
+                  bannerSettingsTab === 'bottom'
+                    ? 'text-yellow-400'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                Bottom Banner
+                {bannerSettingsTab === 'bottom' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-yellow-400 rounded-t" />
+                )}
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="mb-8">
+              {bannerSettingsTab === 'top' && (
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-4">Top Banner Configuration</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-gray-300 mb-2 font-semibold">Banner Image</label>
+                      <div className="flex flex-col gap-3">
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) setTopBannerImage(file)
+                            }}
+                            className="hidden"
+                            id="topBannerUpload"
+                          />
+                          <label
+                            htmlFor="topBannerUpload"
+                            className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-700 border-2 border-dashed border-gray-600 rounded-lg text-gray-300 hover:bg-gray-600 hover:border-yellow-500 cursor-pointer transition"
+                          >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <span className="font-semibold">Upload Banner Image</span>
+                          </label>
+                        </div>
+                        {topBannerImage && (
+                          <div className="relative rounded-lg overflow-hidden border-2 border-gray-600">
+                            <img
+                              src={typeof topBannerImage === 'string' ? topBannerImage : URL.createObjectURL(topBannerImage)}
+                              alt="Top Banner Preview"
+                              className="w-full h-32 object-cover"
+                            />
+                            <button
+                              onClick={() => setTopBannerImage('')}
+                              className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-gray-400 text-sm mt-2">Current: /Bannertop.png</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {bannerSettingsTab === 'bottom' && (
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-4">Bottom Banner Carousel Configuration</h3>
+                  <div className="space-y-6">
+                    {/* Banner 1 */}
+                    <div className="bg-gray-700/50 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold text-yellow-400 mb-3">Banner 1</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-gray-300 mb-2">Image</label>
+                          <div className="flex flex-col gap-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) setBottomBanner1Image(file)
+                              }}
+                              className="hidden"
+                              id="bottomBanner1Upload"
+                            />
+                            <label
+                              htmlFor="bottomBanner1Upload"
+                              className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-gray-300 hover:bg-gray-500 hover:border-yellow-500 cursor-pointer transition text-sm"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                              </svg>
+                              <span>Upload Image</span>
+                            </label>
+                            {bottomBanner1Image && (
+                              <div className="relative rounded overflow-hidden border border-gray-500">
+                                <img
+                                  src={typeof bottomBanner1Image === 'string' ? bottomBanner1Image : URL.createObjectURL(bottomBanner1Image)}
+                                  alt="Banner 1"
+                                  className="w-full h-20 object-cover"
+                                />
+                                <button
+                                  onClick={() => setBottomBanner1Image('')}
+                                  className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-gray-300 mb-2">Link URL</label>
+                          <input
+                            type="text"
+                            placeholder="https://example.com"
+                            value={bottomBanner1Link}
+                            onChange={(e) => setBottomBanner1Link(e.target.value)}
+                            className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Banner 2 */}
+                    <div className="bg-gray-700/50 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold text-yellow-400 mb-3">Banner 2</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-gray-300 mb-2">Image</label>
+                          <div className="flex flex-col gap-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) setBottomBanner2Image(file)
+                              }}
+                              className="hidden"
+                              id="bottomBanner2Upload"
+                            />
+                            <label
+                              htmlFor="bottomBanner2Upload"
+                              className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-gray-300 hover:bg-gray-500 hover:border-yellow-500 cursor-pointer transition text-sm"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                              </svg>
+                              <span>Upload Image</span>
+                            </label>
+                            {bottomBanner2Image && (
+                              <div className="relative rounded overflow-hidden border border-gray-500">
+                                <img
+                                  src={typeof bottomBanner2Image === 'string' ? bottomBanner2Image : URL.createObjectURL(bottomBanner2Image)}
+                                  alt="Banner 2"
+                                  className="w-full h-20 object-cover"
+                                />
+                                <button
+                                  onClick={() => setBottomBanner2Image('')}
+                                  className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-gray-300 mb-2">Link URL</label>
+                          <input
+                            type="text"
+                            placeholder="https://example.com"
+                            value={bottomBanner2Link}
+                            onChange={(e) => setBottomBanner2Link(e.target.value)}
+                            className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Banner 3 */}
+                    <div className="bg-gray-700/50 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold text-yellow-400 mb-3">Banner 3</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-gray-300 mb-2">Image</label>
+                          <div className="flex flex-col gap-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) setBottomBanner3Image(file)
+                              }}
+                              className="hidden"
+                              id="bottomBanner3Upload"
+                            />
+                            <label
+                              htmlFor="bottomBanner3Upload"
+                              className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-gray-300 hover:bg-gray-500 hover:border-yellow-500 cursor-pointer transition text-sm"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                              </svg>
+                              <span>Upload Image</span>
+                            </label>
+                            {bottomBanner3Image && (
+                              <div className="relative rounded overflow-hidden border border-gray-500">
+                                <img
+                                  src={typeof bottomBanner3Image === 'string' ? bottomBanner3Image : URL.createObjectURL(bottomBanner3Image)}
+                                  alt="Banner 3"
+                                  className="w-full h-20 object-cover"
+                                />
+                                <button
+                                  onClick={() => setBottomBanner3Image('')}
+                                  className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-gray-300 mb-2">Link URL</label>
+                          <input
+                            type="text"
+                            placeholder="https://example.com"
+                            value={bottomBanner3Link}
+                            onChange={(e) => setBottomBanner3Link(e.target.value)}
+                            className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Additional Banners */}
+                    {additionalBanners.map((banner, index) => (
+                      <div key={banner.id} className="bg-gray-700/50 p-4 rounded-lg relative">
+                        <button
+                          onClick={() => setAdditionalBanners(additionalBanners.filter(b => b.id !== banner.id))}
+                          className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold"
+                          title="Remove banner"
+                        >
+                          ×
+                        </button>
+                        <h4 className="text-lg font-semibold text-yellow-400 mb-3">Banner {index + 4}</h4>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-gray-300 mb-2">Image</label>
+                            <div className="flex flex-col gap-2">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    setAdditionalBanners(additionalBanners.map(b => 
+                                      b.id === banner.id ? { ...b, image: file } : b
+                                    ))
+                                  }
+                                }}
+                                className="hidden"
+                                id={`additionalBanner${banner.id}Upload`}
+                              />
+                              <label
+                                htmlFor={`additionalBanner${banner.id}Upload`}
+                                className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-gray-300 hover:bg-gray-500 hover:border-yellow-500 cursor-pointer transition text-sm"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <span>Upload Image</span>
+                              </label>
+                              {banner.image && (
+                                <div className="relative rounded overflow-hidden border border-gray-500">
+                                  <img
+                                    src={typeof banner.image === 'string' ? banner.image : URL.createObjectURL(banner.image)}
+                                    alt={`Banner ${index + 4}`}
+                                    className="w-full h-20 object-cover"
+                                  />
+                                  <button
+                                    onClick={() => setAdditionalBanners(additionalBanners.map(b => 
+                                      b.id === banner.id ? { ...b, image: '' } : b
+                                    ))}
+                                    className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-gray-300 mb-2">Link URL</label>
+                            <input
+                              type="text"
+                              placeholder="https://example.com"
+                              value={banner.link}
+                              onChange={(e) => setAdditionalBanners(additionalBanners.map(b => 
+                                b.id === banner.id ? { ...b, link: e.target.value } : b
+                              ))}
+                              className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Add Banner Button */}
+                    <button
+                      onClick={() => {
+                        setAdditionalBanners([...additionalBanners, { id: nextBannerId, image: '', link: '' }])
+                        setNextBannerId(nextBannerId + 1)
+                      }}
+                      className="w-full bg-gray-700 hover:bg-gray-600 border-2 border-dashed border-gray-500 hover:border-yellow-500 text-gray-300 hover:text-yellow-400 px-4 py-6 rounded-lg font-semibold text-lg transition flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add Banner
+                    </button>
+
+                    {/* Carousel Settings */}
+                    <div className="bg-gray-700/50 p-4 rounded-lg">
+                      <h4 className="text-lg font-semibold text-yellow-400 mb-3">Carousel Settings</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-gray-300 mb-2">Auto-rotate Interval (seconds)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="30"
+                            value={carouselInterval}
+                            onChange={(e) => setCarouselInterval(parseInt(e.target.value) || 5)}
+                            className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <button
+                onClick={saveBannerSettings}
+                disabled={isSavingBanners}
+                className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-black px-6 py-3 rounded-lg font-bold text-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSavingBanners ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button
+                onClick={() => setShowBannerSettings(false)}
+                disabled={isSavingBanners}
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-bold text-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
               </button>
             </div>
           </div>
