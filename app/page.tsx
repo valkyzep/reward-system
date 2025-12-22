@@ -1550,7 +1550,7 @@ export default function Home() {
                     <div className="popup-claiming-process bg-gray-800/50 rounded-lg pt-2 pb-3 px-4 border" style={{ borderColor: '#344459' }}>
                       <h3 className="popup-claiming-title font-bold text-[#FFD257] mb-1" style={{ fontSize: '9px' }}>How Your Reward Works:</h3>
                       <ol className="popup-claiming-list text-gray-300 space-y-1 list-decimal list-inside" style={{ fontSize: '8px' }}>
-                        <li>Submit you form below.</li>
+                        <li>Submit your form below.</li>
                         <li>Our team reviews & approves (usually within 24-48 hours).</li>
                         <li>Get confirmed via email or SMS.</li>
                         <li>Receive your reward (delivered or pick-up).</li>
