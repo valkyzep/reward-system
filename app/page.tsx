@@ -546,16 +546,12 @@ export default function Home() {
                 />
                 {/* Title */}
                 <h1 className="w-full font-extrabold mb-2 text-white drop-shadow-lg text-center lg:text-left tracking-tight" style={{ fontSize: 'clamp(1.5rem, 5vw, 3.75rem)', lineHeight: '1.2' }}>
-                  Unlock Exclusive Rewards
+                  Claim Your Epic Rewards
                 </h1>
                 {/* Description */}
-                <p className="text-white mb-3 max-w-3xl text-center lg:text-left drop-shadow-lg font-medium" style={{ fontSize: 'clamp(0.875rem, 2.5vw, 1.25rem)' }}>
-                  Time2Claim is the official redemption platform for Time2Bet.
-                </p>
+                
                 <p className="text-white mb-5 max-w-3xl text-center lg:text-left drop-shadow-lg font-medium" style={{ fontSize: 'clamp(0.875rem, 2.5vw, 1.25rem)' }}>
-                  Convert your earned points into exclusive rewards <br className="lg:hidden" />
-                  <br className="hidden lg:block" />
-                  and enjoy a seamless claiming experience.
+                  Redeem Time2Bet points for luxury cars, watches, gadgets & more.
                 </p>
                 
                 {/* Button and Stats Container - Flexed for mobile */}
@@ -577,7 +573,7 @@ export default function Home() {
                     e.currentTarget.style.boxShadow = '0 10px 30px rgba(255, 120, 0, 0.3)'; 
                   }}
                 >
-                  CLAIM NOW
+                  Browse Rewards
                 </button>
                 
                 {/* Mobile stats - under button, centered, horizontal */}
@@ -611,7 +607,7 @@ export default function Home() {
                             transition={{ duration: 0.4, ease: "easeInOut" }}
                             className="absolute inset-0 flex items-center justify-center"
                           >
-                            {activePlayersCount}K
+                            {activePlayersCount}K+
                           </motion.div>
                         </AnimatePresence>
                       </div>
@@ -654,7 +650,7 @@ export default function Home() {
                         transition={{ duration: 0.4, ease: "easeInOut" }}
                         className="absolute inset-0 flex items-center"
                       >
-                        {activePlayersCount}K
+                        {activePlayersCount}K+
                       </motion.div>
                     </AnimatePresence>
                   </div>
@@ -683,7 +679,7 @@ export default function Home() {
             onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(135deg, #FF7901 0%, #FFA323 100%)'; e.currentTarget.style.boxShadow = 'none'; }}
             onClick={() => setShowClaimsChecker(true)}
           >
-            Track my Reward
+            Track Your Reward
           </button>
         </div>
       </header>
@@ -882,13 +878,13 @@ export default function Home() {
       
       {/* Mobile filter button - After carousel */}
       <div className="mobile-filter-section w-full bg-gray-900 py-4 px-4 lg:hidden">
-        <div className="mobile-filter-bar flex items-center justify-center gap-4 max-w-6xl mx-auto">
+        <div className="mobile-filter-bar flex items-center gap-4 max-w-6xl mx-auto">
           <button 
-            className="mobile-filters-button px-4 py-2 bg-yellow-500 text-black rounded-lg font-semibold text-sm"
+            className="mobile-filters-button px-4 py-2 bg-yellow-500 text-black rounded-lg font-semibold text-sm flex items-center"
             onClick={() => setMobileFiltersOpen(true)}
           >
-            <img src="/filter.png" alt="Filter" className="mobile-filter-icon inline-block mr-1" />
-            Active Filters
+            <img src="/filter.png" alt="Filter" className="mobile-filter-icon mr-1" />
+            Filters
           </button>
           
           <div className="mobile-slider-wrapper flex-1 max-w-xs">
@@ -1262,8 +1258,8 @@ export default function Home() {
               
               {/* Header */}
               <div className="text-center mb-6">
-                <h2 className="claims-checker-title text-3xl font-extrabold mb-2" style={{ background: 'linear-gradient(135deg, #FF7901, #FFA323)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Track my Reward</h2>
-                <p className="claims-checker-description text-gray-300 text-sm">Please enter your Request ID so you can see the status of your request</p>
+                <h2 className="claims-checker-title text-3xl font-extrabold mb-2" style={{ background: 'linear-gradient(135deg, #FF7901, #FFA323)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>Check Reward Status</h2>
+                <p className="claims-checker-description text-gray-300 text-sm">Enter your Request ID to check the status of your reward</p>
               </div>
               
               {/* Input Field with Loading Animation */}
@@ -1330,7 +1326,7 @@ export default function Home() {
                       setClaimStatus({
                         status: 'Not Found',
                         color: 'red',
-                        message: data.error || 'Claim not found. Please check your Request ID.'
+                        message: data.error || 'Reward not found. Please check your Request ID.'
                       });
                     }
                   } catch (error) {
@@ -1338,7 +1334,7 @@ export default function Home() {
                     setClaimStatus({
                       status: 'Error',
                       color: 'red',
-                      message: 'Failed to check claim status. Please try again.'
+                      message: 'Failed to check Reward Status. Please try again.'
                     });
                   } finally {
                     setIsChecking(false);
@@ -1364,7 +1360,7 @@ export default function Home() {
                   }
                 }}
               >
-                {isChecking ? 'Checking...' : 'Check Claim'}
+                {isChecking ? 'Checking...' : 'Check Status'}
               </button>
               
               {/* Result Field */}
@@ -1529,8 +1525,11 @@ export default function Home() {
                 {/* Right Column: Product Details */}
                 <div className="popup-right-column pt-4 md:pt-6 px-4 md:px-6 pb-4 space-y-2 flex flex-col justify-end">
                     {/* Product Name */}
-                    <h1 className="popup-product-name font-bold text-lg md:text-xl" style={{ lineHeight: '1.2' }}>{selectedReward.name}</h1>
-                    <p className="popup-product-subtitle text-white pb-2 text-xs md:text-sm">{selectedReward.model}</p>
+                    <h1 className="popup-product-name font-bold text-lg md:text-xl" style={{ lineHeight: '1.2' }}>
+                      <span className="md:block hidden">{selectedReward.name}</span>
+                      <span className="md:hidden">{selectedReward.name} {selectedReward.model && selectedReward.model}</span>
+                    </h1>
+                    <p className="popup-product-subtitle text-white pb-2 text-xs md:text-sm md:block hidden">{selectedReward.model}</p>
                     
                     {/* Description */}
                     <p className="popup-description text-sm text-gray-400" style={{ fontSize: '9px' }}>
@@ -1545,12 +1544,12 @@ export default function Home() {
                     
                     {/* Claiming Process */}
                     <div className="popup-claiming-process bg-gray-800/50 rounded-lg pt-2 pb-3 px-4 border" style={{ borderColor: '#344459' }}>
-                      <h3 className="popup-claiming-title font-bold text-[#FFD257] mb-1" style={{ fontSize: '9px' }}>Claiming Process:</h3>
+                      <h3 className="popup-claiming-title font-bold text-[#FFD257] mb-1" style={{ fontSize: '9px' }}>How Your Reward Works:</h3>
                       <ol className="popup-claiming-list text-gray-300 space-y-1 list-decimal list-inside" style={{ fontSize: '8px' }}>
-                        <li>Fill out the claim form below.</li>
-                        <li>Wait for admin approval (24-48 hours).</li>
-                        <li>Receive confirmation via email/SMS.</li>
-                        <li>Claim your reward or receive delivery.</li>
+                        <li>Submit you form below.</li>
+                        <li>Our team reviews & approves (usually within 24-48 hours).</li>
+                        <li>Get confirmed via email or SMS.</li>
+                        <li>Receive your reward (delivered or pick-up).</li>
                       </ol>
                     </div>
                 </div>
@@ -1558,7 +1557,7 @@ export default function Home() {
 
               {/* Row 2: Claim Form (Full Width) */}
               <div className="popup-form px-4 md:px-20 pb-4">
-                <h3 className="popup-form-title font-bold text-white mb-2 text-sm md:text-base">Complete Your Claim</h3>
+                <h3 className="popup-form-title font-bold text-white mb-2 text-sm md:text-base">Finalize Your Claim</h3>
                 
                 <form className="popup-claim-form space-y-2" onSubmit={async (e) => { 
                   e.preventDefault(); 
@@ -1607,7 +1606,7 @@ export default function Home() {
                         <input 
                           type="text" 
                           name="username"
-                          placeholder="Username" 
+                          placeholder="Your Time2Bet Username" 
                           className="px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 text-sm" 
                           required 
                         />
@@ -1711,7 +1710,7 @@ export default function Home() {
                         <input 
                           type="text" 
                           name="username"
-                          placeholder="Username" 
+                          placeholder="Your Time2Bet Username" 
                           className="px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 text-sm" 
                           required 
                         />
@@ -1803,7 +1802,7 @@ export default function Home() {
                       <input 
                         type="text"
                         name="deliveryAddress"
-                        placeholder="Complete Delivery Address" 
+                        placeholder="Full Delivery Address (including city, province, ZIP code)" 
                         className="w-full px-3 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 text-sm" 
                         required 
                       />
@@ -1819,7 +1818,7 @@ export default function Home() {
                     whileTap={{ scale: 0.98 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
-                    CONFIRM CLAIM
+                    Claim My Reward
                   </motion.button>
                 </form>
               </div>

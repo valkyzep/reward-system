@@ -104,8 +104,7 @@ export async function GET(request: Request) {
       .from('claims')
       .select(`
         *,
-        reward:rewards (name, points),
-        variant:reward_variants (option_name)
+        reward:rewards (name, points)
       `)
       .eq('claim_id', claimId)
       .single()
@@ -121,7 +120,6 @@ export async function GET(request: Request) {
       claimId: claim.claim_id,
       rewardName: claim.reward?.name || 'Unknown Reward',
       points: claim.reward?.points || 0,
-      variant: claim.variant?.option_name || 'N/A',
       status: claim.status,
       username: claim.username,
       fullName: claim.full_name,

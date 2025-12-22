@@ -31,7 +31,7 @@ const PointsRangeSlider: React.FC<PointsRangeSliderProps> = ({ min, max, value, 
   return (
     <div className="points-range-container flex flex-col gap-1 px-4 py-2 rounded-lg" style={{ backgroundColor: '#1B2D3B' }}>
       <h4 className="points-range-title text-lg font-semibold text-white flex items-center gap-2">
-        Points Range
+        Price Range
       </h4>
       <div className="points-range-minmax flex justify-between text-xs text-gray-400 mb-1">
         <span>{formatNumber(min)}</span>

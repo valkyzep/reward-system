@@ -1114,7 +1114,7 @@ body {
     min-height: 3.5rem !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     border-radius: 5px !important;
     border: 2px solid #213442 !important;
     color: white !important;
@@ -1715,6 +1715,7 @@ body {
     grid-template-columns: repeat(4, 1fr) !important;
     gap: 0.5rem !important;
     margin-bottom: 0.15rem !important;
+    padding: 0 3px !important;
   }
   
   .popup-gallery img {
@@ -2105,7 +2106,7 @@ body {
     min-height: 32px !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     border-radius: 3px !important;
     border: 1px solid #213442 !important;
     color: white !important;
