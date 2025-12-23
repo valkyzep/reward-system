@@ -1838,7 +1838,7 @@ export default function Home() {
         <div className="sticky bottom-0 w-full py-0 flex justify-center" style={{ zIndex: 60 }}>
           <div className="banner-container relative overflow-hidden flex items-center justify-center" style={{ width: '80%', borderRadius: '10px' }}>
             {/* Banner Carousel with Smooth Crossfade */}
-            <div className="relative w-full max-w-[1200px] mx-auto">
+            <div className="relative w-full max-w-[900px] mx-auto">
               {/* Close Button */}
               <button
                 onClick={() => setShowBottomBanner(false)}
@@ -1878,8 +1878,8 @@ export default function Home() {
                       display: 'block',
                       backfaceVisibility: 'hidden',
                       WebkitBackfaceVisibility: 'hidden',
-                      maxWidth: '1200px',
-                      maxHeight: '400px'
+                      maxWidth: '900px',
+                      maxHeight: '300px'
                     }}
                   />
                 </a>
