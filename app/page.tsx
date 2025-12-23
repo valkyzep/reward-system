@@ -1837,17 +1837,17 @@ export default function Home() {
       {showBottomBanner && bannersLoaded && (
         <div className="sticky bottom-0 w-full py-0 flex justify-center" style={{ zIndex: 60 }}>
           <div className="banner-container relative overflow-hidden flex items-center justify-center" style={{ width: '80%', borderRadius: '10px' }}>
-            {/* Close Button */}
-            <button
-              onClick={() => setShowBottomBanner(false)}
-              className="absolute top-2 right-2 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white font-bold text-xl transition z-10"
-              aria-label="Close banner"
-            >
-              ×
-            </button>
-            
             {/* Banner Carousel with Smooth Crossfade */}
-            <div className="relative w-full">
+            <div className="relative w-full max-w-[1200px] mx-auto">
+              {/* Close Button */}
+              <button
+                onClick={() => setShowBottomBanner(false)}
+                className="absolute top-1 right-1 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white font-bold text-xl transition z-20"
+                aria-label="Close banner"
+              >
+                ×
+              </button>
+              
               {bannerImages.map((image, idx) => (
                 <a
                   key={idx}
@@ -1872,12 +1872,14 @@ export default function Home() {
                   <img
                     src={image}
                     alt={`Banner ${idx + 1}`}
-                    className="w-full h-auto object-contain cursor-pointer"
+                    className="w-full h-auto object-contain cursor-pointer mx-auto"
                     style={{ 
                       borderRadius: '10px',
                       display: 'block',
                       backfaceVisibility: 'hidden',
-                      WebkitBackfaceVisibility: 'hidden'
+                      WebkitBackfaceVisibility: 'hidden',
+                      maxWidth: '1200px',
+                      maxHeight: '400px'
                     }}
                   />
                 </a>
