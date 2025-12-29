@@ -31,6 +31,7 @@ export default function Home() {
   const [tierFilter, setTierFilter] = useState<string[]>([])
   const [pointsRange, setPointsRange] = useState<[number, number]>([MIN_POINTS, MAX_POINTS])
   const [sortOrder, setSortOrder] = useState<'high-low' | 'low-high'>('high-low')
+  const [sortOption, setSortOption] = useState<'points-high' | 'points-low' | 'stock-low' | 'stock-high' | 'newest' | 'most-claimed' | 'discounted'>('points-high')
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
   const [showSuccessModal, setShowSuccessModal] = useState(false)
@@ -350,6 +351,66 @@ export default function Home() {
       const aTierOrder = tierOrder[aTier] || 999
       const bTierOrder = tierOrder[bTier] || 999
       
+      // Apply user-selected sort option
+      if (sortOption === 'points-high') {
+        // Highest points first
+        return b.points - a.points
+      }
+      if (sortOption === 'points-low') {
+        // Lowest points first
+        return a.points - b.points
+      }
+      if (sortOption === 'stock-low') {
+        // Lowest stock first, then high to low points
+        if (aQuantity !== bQuantity) return aQuantity - bQuantity
+        return b.points - a.points
+      }
+      if (sortOption === 'stock-high') {
+        // Highest stock first, then high to low points
+        if (aQuantity !== bQuantity) return bQuantity - aQuantity
+        return b.points - a.points
+      }
+      if (sortOption === 'newest') {
+        // Sort by created_at (newest first)
+        const aDate = a.created_at ? new Date(a.created_at).getTime() : a.id || 0
+        const bDate = b.created_at ? new Date(b.created_at).getTime() : b.id || 0
+        return bDate - aDate
+      }
+      if (sortOption === 'most-claimed') {
+        // Sort by delivered_count (highest to lowest)
+        const aDelivered = a.delivered_count || 0
+        const bDelivered = b.delivered_count || 0
+        if (aDelivered !== bDelivered) return bDelivered - aDelivered
+        return b.points - a.points
+      }
+      if (sortOption === 'discounted') {
+        // Filter for active discounts only, then sort by discount percentage (highest first)
+        const now = new Date()
+        const aHasDiscount = (a as any).discounted_price && 
+                             (a as any).discounted_price < a.points &&
+                             (!(a as any).discount_end_date || now < new Date((a as any).discount_end_date))
+        const bHasDiscount = (b as any).discounted_price && 
+                             (b as any).discounted_price < b.points &&
+                             (!(b as any).discount_end_date || now < new Date((b as any).discount_end_date))
+        
+        // Items with discounts come first
+        if (aHasDiscount && !bHasDiscount) return -1
+        if (!aHasDiscount && bHasDiscount) return 1
+        
+        // Both have discounts - calculate and sort by discount percentage (highest first)
+        if (aHasDiscount && bHasDiscount) {
+          const aDiscountPercent = (1 - (a as any).discounted_price / a.points) * 100
+          const bDiscountPercent = (1 - (b as any).discounted_price / b.points) * 100
+          if (aDiscountPercent !== bDiscountPercent) return bDiscountPercent - aDiscountPercent
+          // Secondary sort by points (highest first)
+          return b.points - a.points
+        }
+        
+        // Neither has discount - sort by points
+        return b.points - a.points
+      }
+      
+      // Default sorting (original logic)
       // Priority 1: Only 1 left (sorted by tier)
       const aIsOne = aQuantity === 1
       const bIsOne = bQuantity === 1
@@ -373,7 +434,7 @@ export default function Home() {
       
       return 0
     })
-  }, [rewards, searchQuery, categoryFilter, tierFilter, pointsRange, sortOrder])
+  }, [rewards, searchQuery, categoryFilter, tierFilter, pointsRange, sortOrder, sortOption])
 
   const getTierStyles = useMemo(() => (tier: string) => {
     switch (tier) {
@@ -714,7 +775,11 @@ export default function Home() {
       </div>
 
       {/* Featured Rewards Carousel - Stacked Card Style */}
-      <div className="carousel-wrapper w-full bg-gradient-to-b from-gray-800 to-gray-900 py-0 px-4 overflow-visible">
+      <div className="carousel-wrapper w-full py-0 px-4 overflow-visible relative" style={{
+        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #0f3460 50%, #16213e 75%, #1a1a2e 100%)',
+        backgroundSize: '400% 400%',
+        animation: 'gradientShift 20s ease-in-out infinite'
+      }}>
         <div className="carousel-container relative max-w-6xl mx-auto h-[500px] flex items-center justify-center">
           {carouselRewards.map((item: any, idx: number) => {
               const tier = item.tier || getTier(item.points, item.name, item.tier)
@@ -778,15 +843,74 @@ export default function Home() {
                   x: translateX,
                   opacity,
                   zIndex,
-                  y: 0
+                  y: adjustedPos === 0 ? [0, -12, 0] : 0
                 }}
                 transition={{
-                  duration: 1.5,
-                  ease: [0.16, 1, 0.3, 1]
+                  scale: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
+                  x: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
+                  opacity: { duration: 0.6 },
+                  y: adjustedPos === 0 ? { duration: 4, ease: "easeInOut", repeat: Infinity } : { duration: 0 }
                 }}
                 style={{ width: '300px', willChange: adjustedPos >= -1 && adjustedPos <= 1 ? 'transform, opacity' : 'auto' }}
               >
                 <div className="relative group h-full">
+                  {/* Time2Claim Logo Overlay */}
+                  <div className="absolute top-5 left-5 z-20 pointer-events-none select-none">
+                    <img 
+                      src="/time2claim.png" 
+                      alt="Time2Claim" 
+                      className="w-20 h-auto opacity-90"
+                      style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
+                    />
+                  </div>
+                  
+                  {/* Discount Timer - Top Right */}
+                  {(() => {
+                    const discountedPrice = (item as any).discounted_price
+                    const discountEndDate = (item as any).discount_end_date
+                    const hasDiscount = discountedPrice && 
+                                       discountedPrice < item.points &&
+                                       (!discountEndDate || new Date() < new Date(discountEndDate))
+                    
+                    if (hasDiscount && discountEndDate) {
+                      const now = new Date()
+                      const end = new Date(discountEndDate)
+                      const diff = end.getTime() - now.getTime()
+                      const hours = Math.floor(diff / (1000 * 60 * 60))
+                      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+                      const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+                      
+                      const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+                      
+                      if (hours > 24) {
+                        return (
+                          <div className="absolute top-4 right-7 z-20 pointer-events-none select-none">
+                            <span className="text-lg text-orange-400 font-semibold whitespace-nowrap">
+                              {timeString}
+                            </span>
+                          </div>
+                        )
+                      } else if (hours > 0) {
+                        return (
+                          <div className="absolute top-5 right-5 z-20 pointer-events-none select-none">
+                            <span className="text-lg text-red-400 font-semibold animate-pulse whitespace-nowrap">
+                              {timeString}
+                            </span>
+                          </div>
+                        )
+                      } else if (minutes > 0 || seconds > 0) {
+                        return (
+                          <div className="absolute top-5 right-5 z-20 pointer-events-none select-none">
+                            <span className="text-lg text-red-500 font-bold animate-pulse whitespace-nowrap">
+                              {timeString}
+                            </span>
+                          </div>
+                        )
+                      }
+                    }
+                    return null
+                  })()}
+                  
                   {/* Stock Banners */}
                   {availableStock > 1 && availableStock <= 10 && (
                     <div className="carousel-stock-banner absolute top-0 -right-5 text-white text-center py-1 px-3 rounded-xl font-bold text-sm z-10 pointer-events-none select-none"
@@ -830,7 +954,8 @@ export default function Home() {
                         ...(adjustedPos === 0 ? {
                           boxShadow: isMobile 
                             ? `0 0 10px ${tierStyles.borderColor}ee, 0 0 20px ${tierStyles.borderColor}88, 0 0 30px ${tierStyles.borderColor}44`
-                            : `0 0 30px ${tierStyles.borderColor}ee, 0 0 60px ${tierStyles.borderColor}88, 0 0 90px ${tierStyles.borderColor}44`
+                            : `0 0 30px ${tierStyles.borderColor}ee, 0 0 60px ${tierStyles.borderColor}88, 0 0 90px ${tierStyles.borderColor}44`,
+                          animation: 'pulseGlow 4s ease-in-out infinite'
                         } : {})
                       }}
                     >
@@ -844,31 +969,98 @@ export default function Home() {
                         />
                       )}
                       
-                      <div className="w-full flex-1 p-0 flex items-center justify-center overflow-hidden">
+                      <div className="w-full flex-1 flex items-center justify-center overflow-hidden">
                         <img 
                           src={(item as any).image || `https://via.placeholder.com/300x200/333333/FFFFFF?text=${encodeURIComponent(item.name)}`}
                           alt={item.name}
-                          className="w-full h-full object-contain"
+                          className="object-contain"
+                          style={{ width: '115%', height: '115%', maxWidth: '115%', maxHeight: '115%' }}
                           loading="lazy"
                           decoding="async"
                         />
                       </div>
                       
-                      <div className="carousel-bottom-section pl-4 pr-2 pb-4 w-full flex flex-col gap-1" style={{ height: '20%', fontFamily: 'Poppins'}}>
-                        {/* Item name and points row */}
-                        <div className="flex justify-between items-center w-full">
-                          <span className="carousel-item-name font-bold text-white" style={{ fontSize: '26px', width: '50%', lineHeight: '26px'}}>{item.name}</span>
-                          <div className="carousel-points-container flex flex-col items-end gap-1 justify-start" style={{ alignSelf: 'flex-start', width: '50%'}}>
-                            <div className="carousel-points-wrapper flex pt-2 items-start gap-1">
-                              <img src="/pts.png" alt="Points" className="carousel-points-icon" style={{ width: '15px', height: '15px', marginTop: '0px' }} />
-                              <span className="carousel-points-text font-bold text-white p-0" style={{ fontSize: '15px', lineHeight: '17px' }}>{item.points.toLocaleString()} Pts</span>
-                            </div>
+                      <div className="carousel-bottom-section pl-4 pr-4 pb-4 pt-2 w-full flex flex-col gap-1.5" style={{ height: '16%', fontFamily: 'Poppins', transform: 'translateY(-1.5rem)'}}>
+                        {/* Item name with truncation */}
+                        <div className="flex items-start justify-between gap-2 w-full">
+                          <div className="flex-1 min-w-0">
+                            <h3 
+                              className="carousel-item-name font-bold text-white leading-tight"
+                              style={{ 
+                                fontSize: '24px',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 1,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                maxHeight: '42px',
+                                lineHeight: '1.5'
+                              }}
+                              title={item.name}
+                            >
+                              {item.name}
+                            </h3>
+                            {/* Model under brand name */}
+                            {item.model && (
+                              <p 
+                                className="carousel-item-model text-white/80 mt-1"
+                                style={{
+                                  fontSize: '15px',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'visible'
+                                }}
+                                title={item.model}
+                              >
+                                {item.model}
+                              </p>
+                            )}
                           </div>
-                        </div>
-                        
-                        {/* Item model/description */}
-                        <div className="carousel-item-model text-sm text-white">
-                          {item.model || 'N/A'}
+                          {/* Points badge */}
+                          <div 
+                            className="carousel-points-badge flex flex-col gap-1 px-3 py-2 rounded-lg flex-shrink-0 relative"
+                            style={{
+                              background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(234, 179, 8, 0.1))',
+                              border: '1px solid rgba(234, 179, 8, 0.3)',
+                              boxShadow: '0 0 10px rgba(234, 179, 8, 0.2)'
+                            }}
+                          >
+                            {(() => {
+                              const discountedPrice = (item as any).discounted_price
+                              const discountEndDate = (item as any).discount_end_date
+                              const hasDiscount = discountedPrice && 
+                                                 discountedPrice < item.points &&
+                                                 (!discountEndDate || new Date() < new Date(discountEndDate))
+                              
+                              if (hasDiscount) {
+                                const discountPercent = Math.round((1 - discountedPrice / item.points) * 100)
+                                return (
+                                  <>
+                                    <div className="flex items-center gap-1.5">
+                                      <img src="/pts.png" alt="Points" className="w-5 h-5" />
+                                      <span className="font-bold text-white whitespace-nowrap" style={{ fontSize: '17px' }}>
+                                        {discountedPrice.toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <span className="absolute -top-1 -right-1 text-[8px] font-semibold text-green-400 bg-green-900/50 px-0.5 py-0 rounded flex items-center justify-center min-w-[22px]">
+                                      -{discountPercent}%
+                                    </span>
+                                    <span className="absolute bottom-7 left-10 line-through text-gray-400 font-medium text-xs opacity-75" style={{ fontSize: '11px' }}>
+                                      {item.points.toLocaleString()}
+                                    </span>
+                                  </>
+                                )
+                              }
+                              
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  <img src="/pts.png" alt="Points" className="w-5 h-5" />
+                                  <span className="font-bold text-white whitespace-nowrap" style={{ fontSize: '17px' }}>
+                                    {item.points.toLocaleString()}
+                                  </span>
+                                </div>
+                              )
+                            })()}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -996,7 +1188,7 @@ export default function Home() {
         </aside>
         {/* Main Content */}
         <main className="main-content flex-1 flex flex-col items-center px-3 sm:px-4 md:px-8 py-4 overflow-visible">
-          <div className="filter-search-container w-full flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-stretch sm:items-center mb-4 sm:mb-6">
+          <div className="filter-search-container w-full max-w-7xl flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between items-stretch sm:items-center mb-4 sm:mb-6">
             <div className="search-container relative w-full sm:w-64 md:w-80 lg:w-[400px]">
               <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1011,6 +1203,24 @@ export default function Home() {
                 }}
                 className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:outline-none focus:border-yellow-500 focus:shadow-[0_0_15px_rgba(234,179,8,0.5)] hover:border-yellow-600 hover:shadow-[0_0_10px_rgba(234,179,8,0.3)] transition-all duration-200 text-sm sm:text-base" 
               />
+            </div>
+            <div className="sort-container relative w-full sm:w-auto">
+              <select
+                value={sortOption}
+                onChange={(e) => {
+                  setSortOption(e.target.value as any)
+                  setCurrentPage(1)
+                }}
+                className="w-full sm:w-auto px-4 py-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:outline-none focus:border-yellow-500 focus:shadow-[0_0_15px_rgba(234,179,8,0.5)] hover:border-yellow-600 hover:shadow-[0_0_10px_rgba(234,179,8,0.3)] transition-all duration-200 text-sm sm:text-base cursor-pointer"
+              >
+                <option value="points-high">Highest Points First</option>
+                <option value="points-low">Lowest Points First</option>
+                <option value="stock-low">Lowest Stock First</option>
+                <option value="stock-high">Highest Stock First</option>
+                <option value="newest">Newest Products</option>
+                <option value="most-claimed">Most Claimed</option>
+                <option value="discounted">Discounted Rewards</option>
+              </select>
             </div>
           </div>
           {loading ? (
@@ -1104,9 +1314,82 @@ export default function Home() {
               <div className="reward-card-model font-normal text-xs text-left w-full text-white drop-shadow-lg" style={{ lineHeight: '10px' }}>{(item as any).model || 'N/A'}</div>
               
               {/* Points with token icon - Left aligned */}
-              <div className="reward-card-points-container mb-0 pb-3 pt-4 text-left w-full flex items-center gap-1 font-medium text-white" >
-                <img src="/pts.png" alt="Points" className="reward-card-points-icon w-4 h-4" />
-                <span className="reward-card-points-text font-bold text-medium text-white" style={{ lineHeight: '20px' }}>{item.points.toLocaleString()}</span>
+              <div className="reward-card-points-container mb-0 pb-3 pt-4 text-left w-full flex flex-col gap-1 font-medium text-white relative" >
+                {(() => {
+                  const discountedPrice = (item as any).discounted_price
+                  const discountEndDate = (item as any).discount_end_date
+                  const hasDiscount = discountedPrice && 
+                                     discountedPrice < item.points &&
+                                     (!discountEndDate || new Date() < new Date(discountEndDate))
+                  
+                  if (hasDiscount) {
+                    const discountPercent = Math.round((1 - discountedPrice / item.points) * 100)
+                    
+                    // Calculate countdown timer
+                    let timerDisplay = null
+                    if (discountEndDate) {
+                      const now = new Date()
+                      const end = new Date(discountEndDate)
+                      const diff = end.getTime() - now.getTime()
+                      const hours = Math.floor(diff / (1000 * 60 * 60))
+                      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+                      const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+                      
+                      const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+                      
+                      if (hours > 24) {
+                        timerDisplay = (
+                          <span className="text-xs text-orange-400 font-semibold whitespace-nowrap">
+                            🏷️ {timeString}
+                          </span>
+                        )
+                      } else if (hours > 0) {
+                        timerDisplay = (
+                          <span className="text-xs text-red-400 font-semibold animate-pulse whitespace-nowrap">
+                            🏷️ {timeString}
+                          </span>
+                        )
+                      } else if (minutes > 0 || seconds > 0) {
+                        timerDisplay = (
+                          <span className="text-xs text-red-500 font-bold animate-pulse whitespace-nowrap">
+                            🏷️ {timeString}
+                          </span>
+                        )
+                      }
+                    }
+                    
+                    return (
+                      <>
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center">
+                            <div className="flex items-center gap-1">
+                              <img src="/pts.png" alt="Points" className="reward-card-points-icon w-4 h-4" />
+                              <span className="reward-card-points-text font-bold text-lg text-white" style={{ lineHeight: '20px' }}>
+                                {discountedPrice.toLocaleString()}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-semibold text-green-400 bg-green-900/50 px-1 py-0.5 rounded text-left ml-1">
+                              -{discountPercent}%
+                            </span>
+                          </div>
+                          {timerDisplay}
+                        </div>
+                        <span className="absolute bottom-7 left-5 line-through text-gray-400 font-medium text-sm opacity-75" style={{ lineHeight: '16px' }}>
+                          {item.points.toLocaleString()}
+                        </span>
+                      </>
+                    )
+                  }
+                  
+                  return (
+                    <div className="flex items-center gap-1">
+                      <img src="/pts.png" alt="Points" className="reward-card-points-icon w-4 h-4" />
+                      <span className="reward-card-points-text font-bold text-medium text-white" style={{ lineHeight: '20px' }}>
+                        {item.points.toLocaleString()}
+                      </span>
+                    </div>
+                  )
+                })()}
               </div>
               
               {/* Claim Button */}

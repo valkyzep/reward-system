@@ -3,13 +3,17 @@
 @tailwind utilities;
 
 /* Prevent background scroll when popup/modal is open - All screen sizes */
-body.modal-open,
-body:has(.popup-modal),
-body:has(#popup-card) {
+body.modal-open {
   overflow: hidden !important;
   position: fixed !important;
   width: 100% !important;
   height: 100vh !important;
+}
+
+/* Prevent scroll for claim popup without position fixed */
+body:has(.popup-modal),
+body:has(#popup-card) {
+  overflow: hidden !important;
 }
 
 /* Last One Banner Glow Animation */
@@ -19,6 +23,28 @@ body:has(#popup-card) {
   }
   50% {
     box-shadow: 0 0 20px rgba(220, 38, 38, 1), 0 0 40px rgba(220, 38, 38, 0.8), 0 0 60px rgba(220, 38, 38, 0.6);
+  }
+}
+
+/* Carousel Animations */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.12);
   }
 }
 

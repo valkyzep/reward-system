@@ -44,7 +44,9 @@ export async function GET() {
         quantity: availableQuantity,
         tier: reward.tier || 'bronze',
         image: images[0] || '',
-        images: images
+        images: images,
+        discounted_price: reward.discounted_price || null,
+        discount_end_date: reward.discount_end_date || null
       }
     })
 

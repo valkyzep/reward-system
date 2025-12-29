@@ -63,7 +63,9 @@ export default function AdminDashboard() {
     points: '',
     quantity: '',
     tier: 'bronze',
-    images: ['', '', '', ''] as (string | File)[]
+    images: ['', '', '', ''] as (string | File)[],
+    discounted_price: '',
+    discount_end_date: ''
   })
   const [showRejectPopup, setShowRejectPopup] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
@@ -629,7 +631,9 @@ export default function AdminDashboard() {
       points: '',
       quantity: '',
       tier: 'bronze',
-      images: ['', '', '', '']
+      images: ['', '', '', ''],
+      discounted_price: '',
+      discount_end_date: ''
     })
     setShowRewardForm(true)
   }
@@ -637,6 +641,15 @@ export default function AdminDashboard() {
   const handleOpenEditForm = (reward: any) => {
     setFormMode('edit')
     setEditingId(reward.id)
+    
+    // Format discount_end_date for datetime-local input
+    let formattedDiscountDate = ''
+    if (reward.discount_end_date) {
+      const date = new Date(reward.discount_end_date)
+      // Format as YYYY-MM-DDTHH:MM for datetime-local input
+      formattedDiscountDate = date.toISOString().slice(0, 16)
+    }
+    
     setFormData({
       name: reward.name,
       model: reward.model || '',
@@ -645,7 +658,9 @@ export default function AdminDashboard() {
       points: reward.points.toString(),
       quantity: reward.quantity?.toString() || '0',
       tier: (reward as any).tier || 'bronze',
-      images: reward.images || ['', '', '', '']
+      images: reward.images || ['', '', '', ''],
+      discounted_price: (reward.discounted_price || '').toString(),
+      discount_end_date: formattedDiscountDate
     })
     setShowRewardForm(true)
   }
@@ -807,7 +822,9 @@ export default function AdminDashboard() {
             category: formData.category,
             quantity: 0,
             tier: formData.tier,
-            images: imageUrls
+            images: imageUrls,
+            discounted_price: formData.discounted_price ? parseInt(formData.discounted_price) : null,
+            discount_end_date: formData.discount_end_date || null
           })
         })
         if (response.ok) {
@@ -832,7 +849,9 @@ export default function AdminDashboard() {
             category: formData.category,
             tier: formData.tier,
             quantity: parseInt(formData.quantity) || 0,
-            images: imageUrls
+            images: imageUrls,
+            discounted_price: formData.discounted_price ? parseInt(formData.discounted_price) : null,
+            discount_end_date: formData.discount_end_date || null
           })
         })
         if (response.ok) {
@@ -2663,6 +2682,56 @@ export default function AdminDashboard() {
                   className="w-full px-4 py-3 bg-[#23272f] text-white rounded-lg border border-yellow-600 focus:outline-none focus:border-yellow-400"
                   required
                 />
+              </div>
+
+              {/* Discount Section */}
+              <div className="bg-[#23272f] p-6 rounded-lg border border-purple-600">
+                <h3 className="text-purple-400 font-bold text-lg mb-4">🏷️ Limited Time Discount</h3>
+                <p className="text-gray-400 text-sm mb-4">Set a temporary discount for this reward</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Discounted Price */}
+                  <div>
+                    <label className="block text-purple-300 font-medium mb-2">Discounted Price</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="e.g., 400"
+                      value={formData.discounted_price}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        setFormData({...formData, discounted_price: value})
+                      }}
+                      className="w-full px-4 py-3 bg-[#1a1d24] text-white rounded-lg border border-purple-500 focus:outline-none focus:border-purple-300"
+                    />
+                    <p className="text-gray-500 text-xs mt-1">Leave empty for no discount</p>
+                  </div>
+                  
+                  {/* Discount End Date */}
+                  <div>
+                    <label className="block text-purple-300 font-medium mb-2">Expires On</label>
+                    <input
+                      type="datetime-local"
+                      value={formData.discount_end_date}
+                      onChange={(e) => setFormData({...formData, discount_end_date: e.target.value})}
+                      className="w-full px-4 py-3 bg-[#1a1d24] text-white rounded-lg border border-purple-500 focus:outline-none focus:border-purple-300"
+                    />
+                    <p className="text-gray-500 text-xs mt-1">Leave empty for no expiry</p>
+                  </div>
+                </div>
+                {formData.discounted_price && parseInt(formData.discounted_price) > 0 && formData.points && parseInt(formData.discounted_price) < parseInt(formData.points) && (
+                  <div className="mt-4 p-3 bg-purple-900/30 border border-purple-500/50 rounded-lg">
+                    <p className="text-purple-200 text-sm font-semibold">Preview:</p>
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-gray-400 line-through text-lg">{formData.points} pts</span>
+                      <span className="text-2xl font-bold text-purple-400">
+                        {formData.discounted_price} pts
+                      </span>
+                      <span className="text-green-400 font-semibold">
+                        (-{Math.round((1 - parseInt(formData.discounted_price) / parseInt(formData.points)) * 100)}%)
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Tier Selection */}

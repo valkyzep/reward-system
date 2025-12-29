@@ -23,7 +23,9 @@ export async function GET(request: NextRequest) {
       category: reward.category,
       quantity: reward.quantity,
       tier: reward.tier || 'bronze',
-      images: reward.images ? JSON.parse(reward.images) : []
+      images: reward.images ? JSON.parse(reward.images) : [],
+      discounted_price: reward.discounted_price || null,
+      discount_end_date: reward.discount_end_date || null
     }))
 
     return NextResponse.json(transformedRewards)
@@ -42,7 +44,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const supabase = await getSupabaseAdmin()
     const body = await request.json()
-    const { id, name, model, description, points, category, quantity, tier, images } = body
+    const { id, name, model, description, points, category, quantity, tier, images, discounted_price, discount_end_date } = body
 
     // Update reward
     const { error: updateError } = await supabase
@@ -56,6 +58,8 @@ export async function PATCH(request: NextRequest) {
         quantity: parseInt(quantity),
         tier: tier || 'bronze',
         images: JSON.stringify(images || []),
+        discounted_price: discounted_price,
+        discount_end_date: discount_end_date || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -134,7 +138,7 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await getSupabaseAdmin()
     const body = await request.json()
-    const { name, model, description, points, category, quantity, tier, images } = body
+    const { name, model, description, points, category, quantity, tier, images, discounted_price, discount_end_date } = body
 
     // Insert reward
     const { data: reward, error: rewardError } = await supabase
@@ -147,7 +151,9 @@ export async function POST(request: NextRequest) {
         category,
         quantity: parseInt(quantity),
         tier: tier || 'bronze',
-        images: JSON.stringify(images || [])
+        images: JSON.stringify(images || []),
+        discounted_price: discounted_price,
+        discount_end_date: discount_end_date || null
       })
       .select()
       .single()
