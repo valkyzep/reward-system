@@ -907,7 +907,7 @@ export default function Home() {
                         return (
                           <div className="absolute top-4 right-7 z-20 pointer-events-none select-none">
                             <span className="text-lg text-orange-400 font-semibold whitespace-nowrap">
-                              {timeString}
+                              ⏱️{timeString}
                             </span>
                           </div>
                         )
@@ -915,7 +915,7 @@ export default function Home() {
                         return (
                           <div className="absolute top-5 right-5 z-20 pointer-events-none select-none">
                             <span className="text-lg text-red-400 font-semibold animate-pulse whitespace-nowrap">
-                              {timeString}
+                              ⏱️{timeString}
                             </span>
                           </div>
                         )
@@ -923,7 +923,7 @@ export default function Home() {
                         return (
                           <div className="absolute top-5 right-5 z-20 pointer-events-none select-none">
                             <span className="text-lg text-red-500 font-bold animate-pulse whitespace-nowrap">
-                              {timeString}
+                              ⏱️{timeString}
                             </span>
                           </div>
                         )
@@ -1417,7 +1417,7 @@ export default function Home() {
                     return (
                       <div className={`absolute ${topPosition} right-4 z-20 pointer-events-none`}>
                         <span className="text-[10px] text-orange-400 font-semibold whitespace-nowrap">
-                          🏷️{timeString}
+                          ⏱️{timeString}
                         </span>
                       </div>
                     )
@@ -1425,7 +1425,7 @@ export default function Home() {
                     return (
                       <div className={`absolute ${topPosition} right-4 z-20 pointer-events-none`}>
                         <span className="text-[10px] text-red-400 font-semibold animate-pulse whitespace-nowrap">
-                          🏷️{timeString}
+                          ⏱️{timeString}
                         </span>
                       </div>
                     )
@@ -1433,7 +1433,7 @@ export default function Home() {
                     return (
                       <div className={`absolute ${topPosition} right-4 z-20 pointer-events-none`}>
                         <span className="text-[10px] text-red-500 font-bold animate-pulse whitespace-nowrap">
-                          🏷️{timeString}
+                          ⏱️{timeString}
                         </span>
                       </div>
                     )
