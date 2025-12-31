@@ -878,7 +878,7 @@ export default function Home() {
                   {/* Time2Claim Logo Overlay */}
                   <div className="absolute top-5 left-5 z-20 pointer-events-none select-none">
                     <img 
-                      src="/time2claim.png" 
+                      src="/Time2Claim.png" 
                       alt="Time2Claim" 
                       className="w-20 h-auto opacity-90"
                       style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
