@@ -577,6 +577,8 @@ export default function Home() {
   
   // Mobile filter drawer state
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [mobileSortOpen, setMobileSortOpen] = useState(false)
+  const [desktopSortOpen, setDesktopSortOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col overflow-visible">
@@ -590,6 +592,25 @@ export default function Home() {
             transition={{ duration: 0.3 }}
             className="fixed inset-0 z-[9999] w-screen h-screen bg-black welcome-modal-bg"
           >
+            {/* Mobile Video Background */}
+            <video 
+              autoPlay 
+              loop 
+              muted 
+              playsInline
+              className="mobile-modal-video"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                zIndex: 0
+              }}
+            >
+              <source src="/t2cmobilemodal.mp4" type="video/mp4" />
+            </video>
 
             {/* Content Container */}
             <motion.div
@@ -597,7 +618,7 @@ export default function Home() {
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.8, y: 50, opacity: 0 }}
               transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
-              className="welcome-modal-container absolute lg:relative bottom-0 lg:bottom-auto z-10 h-[55%] lg:h-full w-full lg:w-3/5 flex flex-col items-center lg:items-start justify-end lg:justify-center p-6 pb-12 lg:p-15 lg:pl-[100px] font-poppins"
+              className="welcome-modal-container absolute lg:relative lg:bottom-auto z-10 lg:h-full w-full lg:w-3/5 flex flex-col items-center lg:items-start justify-end lg:justify-center p-6 pb-12 lg:p-15 lg:pl-[100px] font-poppins"
               style={{ fontFamily: 'Poppins, sans-serif' }}
               onClick={(e) => e.stopPropagation()}
             >
@@ -644,8 +665,8 @@ export default function Home() {
                 {/* Mobile stats - under button, centered, horizontal */}
                 {statsLoaded && (
                   <div className="lg:hidden flex flex-row items-center justify-center w-full" style={{ gap: 'clamp(0.75rem, 3vw, 1rem)' }}>
-                    <div className="bg-transparent text-white shadow-lg stats-container" style={{ padding: 'clamp(0.75rem, 3vw, 1.25rem) clamp(1rem, 3.5vw, 1.5rem)', minWidth: '100px' }}>
-                      <div className="font-bold mb-1 welcome-modal-stats-number overflow-hidden relative" style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', height: '2.5rem', minWidth: '80px' }}>
+                    <div className="bg-transparent text-white shadow-lg stats-container" style={{ padding: 'clamp(0.75rem, 3vw, 1.25rem) clamp(1rem, 3.5vw, 1.5rem)', minWidth: '120px' }}>
+                      <div className="font-bold mb-1 welcome-modal-stats-number overflow-hidden relative" style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', height: '2.5rem', minWidth: '100px' }}>
                         <AnimatePresence mode="popLayout">
                           <motion.div
                             key={rewardsClaimedCount}
@@ -655,7 +676,7 @@ export default function Home() {
                             transition={{ duration: 0.4, ease: "easeInOut" }}
                             className="absolute inset-0 flex items-center justify-center"
                           >
-                            {rewardsClaimedCount}
+                            {rewardsClaimedCount.toLocaleString()}
                           </motion.div>
                         </AnimatePresence>
                       </div>
@@ -980,7 +1001,7 @@ export default function Home() {
                         />
                       </div>
                       
-                      <div className="carousel-bottom-section pl-4 pr-4 pb-4 pt-2 w-full flex flex-col gap-1.5" style={{ height: '16%', fontFamily: 'Poppins', transform: 'translateY(-1.5rem)'}}>
+                      <div className="carousel-bottom-section pl-4 pr-4 pb-4 pt-2 w-full flex flex-col gap-1.5" style={{ fontFamily: 'Poppins', transform: 'translateY(-1.5rem)'}}>
                         {/* Item name with truncation */}
                         <div className="flex items-start justify-between gap-2 w-full">
                           <div className="flex-1 min-w-0">
@@ -1017,7 +1038,7 @@ export default function Home() {
                           </div>
                           {/* Points badge */}
                           <div 
-                            className="carousel-points-badge flex flex-col gap-1 px-3 py-2 rounded-lg flex-shrink-0 relative"
+                            className="carousel-points-badge flex flex-col gap-1 px-3 py-2 rounded-lg relative"
                             style={{
                               background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.2), rgba(234, 179, 8, 0.1))',
                               border: '1px solid rgba(234, 179, 8, 0.3)',
@@ -1074,16 +1095,30 @@ export default function Home() {
       
       {/* Mobile filter button - After carousel */}
       <div className="mobile-filter-section w-full bg-gray-900 py-4 px-4 lg:hidden">
-        <div className="mobile-filter-bar flex items-center gap-4 max-w-6xl mx-auto">
-          <button 
-            className="mobile-filters-button px-4 py-2 bg-yellow-500 text-black rounded-lg font-semibold text-sm flex items-center"
-            onClick={() => setMobileFiltersOpen(true)}
-          >
-            <img src="/filter.png" alt="Filter" className="mobile-filter-icon mr-1" />
-            Filters
-          </button>
+        <div className="mobile-filter-bar flex flex-col gap-3 max-w-6xl mx-auto">
+          <div className="flex items-center gap-3">
+            <button 
+              className="mobile-filters-button flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg font-semibold text-sm border border-gray-700 flex items-center justify-center hover:bg-gray-700 hover:border-gray-600 focus:outline-none transition-all duration-200"
+              onClick={() => setMobileFiltersOpen(true)}
+            >
+              <img src="/filter.png" alt="Filter" className="mobile-filter-icon mr-1" />
+              Filters
+            </button>
+            
+            <button 
+              className="mobile-filters-button flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg font-semibold text-sm border border-gray-700 flex items-center justify-center hover:bg-gray-700 hover:border-gray-600 focus:outline-none transition-all duration-200"
+              onClick={() => setMobileSortOpen(true)}
+            >
+              {sortOption === 'points-high' && 'Highest Points First'}
+              {sortOption === 'points-low' && 'Lowest Points First'}
+              {sortOption === 'stock-low' && 'Lowest Stock First'}
+              {sortOption === 'stock-high' && 'Highest Stock First'}
+              {sortOption === 'newest' && 'Newest Products'}
+              {sortOption === 'most-claimed' && 'Most Claimed'}
+            </button>
+          </div>
           
-          <div className="mobile-slider-wrapper flex-1 max-w-xs">
+          <div className="mobile-slider-wrapper">
             <PointsRangeSlider
               min={MIN_POINTS}
               max={MAX_POINTS}
@@ -1098,10 +1133,83 @@ export default function Home() {
       </div>
       
       {/* Mobile Filter Drawer */}
+      {mobileSortOpen && (
+        <div className="lg:hidden relative z-50">
+          <div className="fixed inset-0 bg-transparent" onClick={() => setMobileSortOpen(false)} />
+          <div className="mobile-sort-dropdown absolute right-0 mr-8 -mt-11 bg-gray-800 rounded-lg p-4 shadow-2xl max-h-[70vh] overflow-y-auto w-[40%]">
+            <div className="mobile-filter-section-wrapper">
+              <h4 className="mobile-filter-heading text-xs font-semibold text-white tracking-wider mb-2">Sort By</h4>
+              <div className="space-y-1">
+                <button
+                  onClick={() => {
+                    setSortOption('points-high')
+                    setCurrentPage(1)
+                    setMobileSortOpen(false)
+                  }}
+                  className={`w-full text-left mobile-filter-label flex items-center gap-2 cursor-pointer px-2 py-0 rounded-lg transition-all ${sortOption === 'points-high' ? 'bg-yellow-500/10 border border-yellow-500/30' : 'hover:bg-gray-700/50'}`}
+                >
+                  <span className={`mobile-filter-text text-xs ${sortOption === 'points-high' ? 'text-yellow-400 font-medium' : 'text-gray-300'}`}>Highest Points First</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setSortOption('points-low')
+                    setCurrentPage(1)
+                    setMobileSortOpen(false)
+                  }}
+                  className={`w-full text-left mobile-filter-label flex items-center gap-2 cursor-pointer px-2 py-0 rounded-lg transition-all ${sortOption === 'points-low' ? 'bg-yellow-500/10 border border-yellow-500/30' : 'hover:bg-gray-700/50'}`}
+                >
+                  <span className={`mobile-filter-text text-xs ${sortOption === 'points-low' ? 'text-yellow-400 font-medium' : 'text-gray-300'}`}>Lowest Points First</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setSortOption('stock-low')
+                    setCurrentPage(1)
+                    setMobileSortOpen(false)
+                  }}
+                  className={`w-full text-left mobile-filter-label flex items-center gap-2 cursor-pointer px-2 py-0 rounded-lg transition-all ${sortOption === 'stock-low' ? 'bg-yellow-500/10 border border-yellow-500/30' : 'hover:bg-gray-700/50'}`}
+                >
+                  <span className={`mobile-filter-text text-xs ${sortOption === 'stock-low' ? 'text-yellow-400 font-medium' : 'text-gray-300'}`}>Lowest Stock First</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setSortOption('stock-high')
+                    setCurrentPage(1)
+                    setMobileSortOpen(false)
+                  }}
+                  className={`w-full text-left mobile-filter-label flex items-center gap-2 cursor-pointer px-2 py-0 rounded-lg transition-all ${sortOption === 'stock-high' ? 'bg-yellow-500/10 border border-yellow-500/30' : 'hover:bg-gray-700/50'}`}
+                >
+                  <span className={`mobile-filter-text text-xs ${sortOption === 'stock-high' ? 'text-yellow-400 font-medium' : 'text-gray-300'}`}>Highest Stock First</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setSortOption('newest')
+                    setCurrentPage(1)
+                    setMobileSortOpen(false)
+                  }}
+                  className={`w-full text-left mobile-filter-label flex items-center gap-2 cursor-pointer px-2 py-0 rounded-lg transition-all ${sortOption === 'newest' ? 'bg-yellow-500/10 border border-yellow-500/30' : 'hover:bg-gray-700/50'}`}
+                >
+                  <span className={`mobile-filter-text text-xs ${sortOption === 'newest' ? 'text-yellow-400 font-medium' : 'text-gray-300'}`}>Newest Products</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setSortOption('most-claimed')
+                    setCurrentPage(1)
+                    setMobileSortOpen(false)
+                  }}
+                  className={`w-full text-left mobile-filter-label flex items-center gap-2 cursor-pointer px-2 py-0 rounded-lg transition-all ${sortOption === 'most-claimed' ? 'bg-yellow-500/10 border border-yellow-500/30' : 'hover:bg-gray-700/50'}`}
+                >
+                  <span className={`mobile-filter-text text-xs ${sortOption === 'most-claimed' ? 'text-yellow-400 font-medium' : 'text-gray-300'}`}>Most Claimed</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {mobileFiltersOpen && (
         <div className="lg:hidden relative z-50">
           <div className="fixed inset-0 bg-transparent" onClick={() => setMobileFiltersOpen(false)} />
-          <div className="mobile-filter-dropdown absolute left-0 right-0 mx-4 mt-2 bg-gray-800 rounded-lg p-4 shadow-2xl max-h-[70vh] overflow-y-auto">
+          <div className="mobile-filter-dropdown absolute left-0 right-0 mx-4 -mt-32 bg-gray-800 rounded-lg p-4 shadow-2xl max-h-[70vh] overflow-y-auto">
             {/* Mobile Category Filter */}
             <div className="mobile-filter-section-wrapper mb-4">
               <h4 className="mobile-filter-heading text-xs font-semibold text-white tracking-wider mb-2">Category</h4>
@@ -1204,23 +1312,33 @@ export default function Home() {
                 className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:outline-none focus:border-yellow-500 focus:shadow-[0_0_15px_rgba(234,179,8,0.5)] hover:border-yellow-600 hover:shadow-[0_0_10px_rgba(234,179,8,0.3)] transition-all duration-200 text-sm sm:text-base" 
               />
             </div>
-            <div className="sort-container relative w-full sm:w-auto">
-              <select
-                value={sortOption}
-                onChange={(e) => {
-                  setSortOption(e.target.value as any)
-                  setCurrentPage(1)
-                }}
-                className="w-full sm:w-auto px-4 py-2 rounded-lg bg-gray-900 text-white border border-gray-700 focus:outline-none focus:border-yellow-500 focus:shadow-[0_0_15px_rgba(234,179,8,0.5)] hover:border-yellow-600 hover:shadow-[0_0_10px_rgba(234,179,8,0.3)] transition-all duration-200 text-sm sm:text-base cursor-pointer"
+            <div className="sort-container relative w-full sm:w-auto hidden lg:block">
+              <button
+                onClick={() => setDesktopSortOpen(!desktopSortOpen)}
+                className="w-48 px-1 py-2 rounded-lg bg-gray-800 text-white border border-gray-700 focus:outline-none hover:bg-gray-700 hover:border-gray-600 transition-all duration-200 text-sm font-semibold cursor-pointer"
               >
-                <option value="points-high">Highest Points First</option>
-                <option value="points-low">Lowest Points First</option>
-                <option value="stock-low">Lowest Stock First</option>
-                <option value="stock-high">Highest Stock First</option>
-                <option value="newest">Newest Products</option>
-                <option value="most-claimed">Most Claimed</option>
-                <option value="discounted">Discounted Rewards</option>
-              </select>
+                {sortOption === 'points-high' && 'Highest Points First'}
+                {sortOption === 'points-low' && 'Lowest Points First'}
+                {sortOption === 'stock-low' && 'Lowest Stock First'}
+                {sortOption === 'stock-high' && 'Highest Stock First'}
+                {sortOption === 'newest' && 'Newest Products'}
+                {sortOption === 'most-claimed' && 'Most Claimed'}
+                {sortOption === 'discounted' && 'Discounted Rewards'}
+              </button>
+              
+              {desktopSortOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
+                  <div className="p-2 space-y-1">
+                    <button onClick={() => { setSortOption('points-high'); setCurrentPage(1); setDesktopSortOpen(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${sortOption === 'points-high' ? 'bg-yellow-500 text-black font-semibold' : 'text-white hover:bg-yellow-500 hover:text-black'}`}>Highest Points First</button>
+                    <button onClick={() => { setSortOption('points-low'); setCurrentPage(1); setDesktopSortOpen(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${sortOption === 'points-low' ? 'bg-yellow-500 text-black font-semibold' : 'text-white hover:bg-yellow-500 hover:text-black'}`}>Lowest Points First</button>
+                    <button onClick={() => { setSortOption('stock-low'); setCurrentPage(1); setDesktopSortOpen(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${sortOption === 'stock-low' ? 'bg-yellow-500 text-black font-semibold' : 'text-white hover:bg-yellow-500 hover:text-black'}`}>Lowest Stock First</button>
+                    <button onClick={() => { setSortOption('stock-high'); setCurrentPage(1); setDesktopSortOpen(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${sortOption === 'stock-high' ? 'bg-yellow-500 text-black font-semibold' : 'text-white hover:bg-yellow-500 hover:text-black'}`}>Highest Stock First</button>
+                    <button onClick={() => { setSortOption('newest'); setCurrentPage(1); setDesktopSortOpen(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${sortOption === 'newest' ? 'bg-yellow-500 text-black font-semibold' : 'text-white hover:bg-yellow-500 hover:text-black'}`}>Newest Products</button>
+                    <button onClick={() => { setSortOption('most-claimed'); setCurrentPage(1); setDesktopSortOpen(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${sortOption === 'most-claimed' ? 'bg-yellow-500 text-black font-semibold' : 'text-white hover:bg-yellow-500 hover:text-black'}`}>Most Claimed</button>
+                    <button onClick={() => { setSortOption('discounted'); setCurrentPage(1); setDesktopSortOpen(false); }} className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${sortOption === 'discounted' ? 'bg-yellow-500 text-black font-semibold' : 'text-white hover:bg-yellow-500 hover:text-black'}`}>Discounted Rewards</button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           {loading ? (
@@ -1275,13 +1393,62 @@ export default function Home() {
                       </div>
               )}
               
+              {/* Discount Timer - Below Stock Banner or at top if no stock banner */}
+              {(() => {
+                const discountedPrice = (item as any).discounted_price
+                const discountEndDate = (item as any).discount_end_date
+                const hasDiscount = discountedPrice && 
+                                   discountedPrice < item.points &&
+                                   (!discountEndDate || new Date() < new Date(discountEndDate))
+                
+                const topPosition = (isLowStock || isLastOne) ? 'top-8' : 'top-2'
+                
+                if (hasDiscount && discountEndDate) {
+                  const now = new Date()
+                  const end = new Date(discountEndDate)
+                  const diff = end.getTime() - now.getTime()
+                  const hours = Math.floor(diff / (1000 * 60 * 60))
+                  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+                  const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+                  
+                  const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+                  
+                  if (hours > 24) {
+                    return (
+                      <div className={`absolute ${topPosition} right-4 z-20 pointer-events-none`}>
+                        <span className="text-[10px] text-orange-400 font-semibold whitespace-nowrap">
+                          🏷️{timeString}
+                        </span>
+                      </div>
+                    )
+                  } else if (hours > 0) {
+                    return (
+                      <div className={`absolute ${topPosition} right-4 z-20 pointer-events-none`}>
+                        <span className="text-[10px] text-red-400 font-semibold animate-pulse whitespace-nowrap">
+                          🏷️{timeString}
+                        </span>
+                      </div>
+                    )
+                  } else if (minutes > 0 || seconds > 0) {
+                    return (
+                      <div className={`absolute ${topPosition} right-4 z-20 pointer-events-none`}>
+                        <span className="text-[10px] text-red-500 font-bold animate-pulse whitespace-nowrap">
+                          🏷️{timeString}
+                        </span>
+                      </div>
+                    )
+                  }
+                }
+                return null
+              })()}
+              
               <div className="transition-all duration-200 h-full" style={{aspectRatio: '1180/1756'}}>
               <div 
                 className={`reward-card-content relative flex flex-col items-center justify-end transition-all duration-200 w-full h-full overflow-hidden ${tierStyles.className}`}
                 style={{
                   borderRadius: '7px',
                   backgroundImage: `url(/${tier}.png)`,
-                  backgroundSize: 'contain',
+                  backgroundSize: '100% 100%',
                   backgroundPosition: 'center',
                   backgroundRepeat: 'no-repeat',
                   ...(isLowStock || isLastOne ? {
@@ -1300,7 +1467,7 @@ export default function Home() {
                   />
                 )}
               {/* Image - 100% width & height */}
-              <div className="reward-card-image-container w-full h-full rounded-t-xl px-3 pt-10 flex items-center justify-center overflow-hidden">
+              <div className="reward-card-image-container w-full h-full rounded-t-xl pt-10 flex items-center justify-center overflow-hidden" style={{ paddingLeft: '1vw', paddingRight: '1vw' }}>
                 <img 
                   src={(item as any).image || `https://via.placeholder.com/300x200/333333/FFFFFF?text=${encodeURIComponent(item.name)}`}
                   alt={item.name}
@@ -1308,7 +1475,7 @@ export default function Home() {
                 />
               </div>
               
-              <div className="reward-card-info px-8 pb-3 pt-1 w-full flex flex-col gap-0 items-center">
+              <div className="reward-card-info pb-3 pt-1 w-full flex flex-col gap-0 items-center" style={{ paddingLeft: '1.5vw', paddingRight: '1.5vw' }}>
               {/* Brand Name - Left aligned */}
               <div className="reward-card-title font-extrabold text-lg text-left w-full text-white drop-shadow-lg" style={{ lineHeight: '25px' }}>{item.name}</div>
               <div className="reward-card-model font-normal text-xs text-left w-full text-white drop-shadow-lg" style={{ lineHeight: '10px' }}>{(item as any).model || 'N/A'}</div>
@@ -1339,20 +1506,20 @@ export default function Home() {
                       
                       if (hours > 24) {
                         timerDisplay = (
-                          <span className="text-xs text-orange-400 font-semibold whitespace-nowrap">
-                            🏷️ {timeString}
+                          <span className="text-[10px] text-orange-400 font-semibold whitespace-nowrap">
+                            🏷️{timeString}
                           </span>
                         )
                       } else if (hours > 0) {
                         timerDisplay = (
-                          <span className="text-xs text-red-400 font-semibold animate-pulse whitespace-nowrap">
-                            🏷️ {timeString}
+                          <span className="text-[10px] text-red-400 font-semibold animate-pulse whitespace-nowrap">
+                            🏷️{timeString}
                           </span>
                         )
                       } else if (minutes > 0 || seconds > 0) {
                         timerDisplay = (
-                          <span className="text-xs text-red-500 font-bold animate-pulse whitespace-nowrap">
-                            🏷️ {timeString}
+                          <span className="text-[10px] text-red-500 font-bold animate-pulse whitespace-nowrap">
+                            🏷️{timeString}
                           </span>
                         )
                       }
@@ -1360,21 +1527,18 @@ export default function Home() {
                     
                     return (
                       <>
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center">
-                            <div className="flex items-center gap-1">
-                              <img src="/pts.png" alt="Points" className="reward-card-points-icon w-4 h-4" />
-                              <span className="reward-card-points-text font-bold text-lg text-white" style={{ lineHeight: '20px' }}>
-                                {discountedPrice.toLocaleString()}
-                              </span>
-                            </div>
-                            <span className="text-[10px] font-semibold text-green-400 bg-green-900/50 px-1 py-0.5 rounded text-left ml-1">
-                              -{discountPercent}%
+                        <div className="flex items-center w-full min-w-0">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <img src="/pts.png" alt="Points" className="reward-card-points-icon w-4 h-4 flex-shrink-0" />
+                            <span className="reward-card-points-text font-bold text-medium text-white truncate" style={{ lineHeight: '20px' }}>
+                              {discountedPrice.toLocaleString()}
                             </span>
                           </div>
-                          {timerDisplay}
+                          <span className="text-[8px] font-semibold text-green-400 bg-green-900/50 px-0.5 py-0.5 rounded text-left ml-1 flex-shrink-0 whitespace-nowrap">
+                            -{discountPercent}%
+                          </span>
                         </div>
-                        <span className="absolute bottom-7 left-5 line-through text-gray-400 font-medium text-sm opacity-75" style={{ lineHeight: '16px' }}>
+                        <span className="absolute bottom-7 left-5 line-through text-gray-400 font-medium text-xs opacity-75 truncate" style={{ lineHeight: '16px', maxWidth: '80%' }}>
                           {item.points.toLocaleString()}
                         </span>
                       </>
