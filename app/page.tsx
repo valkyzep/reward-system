@@ -55,10 +55,12 @@ export default function Home() {
   const [bannersLoaded, setBannersLoaded] = useState(false)
   
   // Banner images and links from database
-  const [topBannerImage, setTopBannerImage] = useState('/Bannertop.png')
+  const [topBannerImages, setTopBannerImages] = useState(['/Bannertop.png'])
+  const [topBannerIndex, setTopBannerIndex] = useState(0)
   const [bannerImages, setBannerImages] = useState(['/Bannertop.png', '/Bannertop.png', '/Bannertop.png'])
   const [bannerLinks, setBannerLinks] = useState(['https://www.facebook.com', 'https://www.tiktok.com', 'https://www.instagram.com'])
-  const [carouselIntervalSeconds, setCarouselIntervalSeconds] = useState(5)
+  const [topBannerIntervalSeconds, setTopBannerIntervalSeconds] = useState(5)
+  const [bottomBannerIntervalSeconds, setBottomBannerIntervalSeconds] = useState(5)
 
   // Fetch initial stats from database
   useEffect(() => {
@@ -86,17 +88,50 @@ export default function Home() {
         const response = await fetch('/api/banner-settings')
         if (response.ok) {
           const data = await response.json()
+          
+          // Helper function to parse JSON strings or return as-is
+          const parseIfNeeded = (value: any) => {
+            if (typeof value === 'string') {
+              try {
+                return JSON.parse(value)
+              } catch {
+                return value
+              }
+            }
+            return value
+          }
+          
+          // Handle top banner as array or single image
           if (data.top_banner_image) {
-            setTopBannerImage(data.top_banner_image)
+            const parsed = parseIfNeeded(data.top_banner_image)
+            // If it's an array, use it directly
+            if (Array.isArray(parsed)) {
+              setTopBannerImages(parsed)
+            } else {
+              // If it's a single image, wrap in array
+              setTopBannerImages([parsed])
+            }
           }
-          if (data.bottom_banner_images && data.bottom_banner_images.length > 0) {
-            setBannerImages(data.bottom_banner_images)
+          
+          if (data.bottom_banner_images) {
+            const parsed = parseIfNeeded(data.bottom_banner_images)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setBannerImages(parsed)
+            }
           }
-          if (data.bottom_banner_links && data.bottom_banner_links.length > 0) {
-            setBannerLinks(data.bottom_banner_links)
+          
+          if (data.bottom_banner_links) {
+            const parsed = parseIfNeeded(data.bottom_banner_links)
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setBannerLinks(parsed)
+            }
           }
-          if (data.carousel_interval) {
-            setCarouselIntervalSeconds(data.carousel_interval)
+          
+          if (data.top_banner_interval) {
+            setTopBannerIntervalSeconds(data.top_banner_interval)
+          }
+          if (data.bottom_banner_interval) {
+            setBottomBannerIntervalSeconds(data.bottom_banner_interval)
           }
         }
       } catch (error) {
@@ -130,41 +165,35 @@ export default function Home() {
     }
   }, [statsLoaded])
 
-  // Auto-rotate banner carousel
+  // Auto-rotate top banner carousel (only if 2+ images)
+  useEffect(() => {
+    if (topBannerImages.length >= 2) {
+      const interval = setInterval(() => {
+        setTopBannerIndex(prev => (prev + 1) % topBannerImages.length)
+      }, topBannerIntervalSeconds * 1000)
+      return () => clearInterval(interval)
+    }
+  }, [topBannerImages.length, topBannerIntervalSeconds])
+
+  // Auto-rotate bottom banner carousel
   useEffect(() => {
     if (showBottomBanner) {
       const interval = setInterval(() => {
         setBannerIndex(prev => (prev + 1) % bannerImages.length)
-      }, carouselIntervalSeconds * 1000)
+      }, bottomBannerIntervalSeconds * 1000)
       return () => clearInterval(interval)
     }
-  }, [showBottomBanner, bannerImages.length, carouselIntervalSeconds])
+  }, [showBottomBanner, bannerImages.length, bottomBannerIntervalSeconds])
 
   // Preload banner images to prevent flickering
   useEffect(() => {
     if (typeof window === 'undefined') return
     
-    const preloadImages = async () => {
-      const imagePromises = bannerImages.map((src) => {
-        return new Promise((resolve, reject) => {
-          const img = window.Image ? new window.Image() : document.createElement('img')
-          img.onload = () => resolve(true)
-          img.onerror = () => reject(new Error(`Failed to load ${src}`))
-          img.src = src
-        })
-      })
-      
-      try {
-        await Promise.all(imagePromises)
-        setBannersLoaded(true)
-      } catch (error) {
-        console.error('Error preloading banner images:', error)
-        setBannersLoaded(true) // Show anyway if preload fails
-      }
+    // Just set bannersLoaded immediately since lazy loading interferes with preload
+    if (bannerImages && bannerImages.length > 0) {
+      setBannersLoaded(true)
     }
-    
-    preloadImages()
-  }, [])
+  }, [bannerImages])
 
   // Disable scroll when welcome modal is open
   useEffect(() => {
@@ -598,7 +627,7 @@ export default function Home() {
               loop 
               muted 
               playsInline
-              className="mobile-modal-video"
+              className="mobile-modal-video lg:hidden"
               style={{
                 position: 'absolute',
                 top: 0,
@@ -610,6 +639,26 @@ export default function Home() {
               }}
             >
               <source src="/t2cmobilemodal.mp4" type="video/mp4" />
+            </video>
+
+            {/* Desktop Video Background */}
+            <video 
+              autoPlay 
+              loop 
+              muted 
+              playsInline
+              className="hidden lg:block"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                zIndex: 0
+              }}
+            >
+              <source src="/t2cdesktopmodal.mp4" type="video/mp4" />
             </video>
 
             {/* Content Container */}
@@ -770,15 +819,51 @@ export default function Home() {
         </div>
       </header>
       {/* Banner Section */}
-      <div className="w-full bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 overflow-visible flex flex-col items-center relative pb-0">
-        {/* Banner Image */}
-        <div className="w-full relative">
-          <div className="banner-container relative h-32 sm:h-48 md:h-64 overflow-hidden flex items-center justify-center">
-            <img 
-              src={topBannerImage} 
-              alt="Banner" 
-              className="w-full h-full object-cover"
-            />
+      <div className="w-full bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 overflow-hidden relative pb-0" style={{ padding: 0, margin: 0 }}>
+        {/* Banner Image - Static (1 image) or Carousel (2+ images) */}
+        <div className="w-full relative" style={{ padding: 0, margin: 0 }}>
+          <div className="banner-container top-banner-container relative h-32 sm:h-48 md:h-64 overflow-hidden" style={{ padding: 0, margin: 0 }}>
+            {topBannerImages.length === 1 ? (
+              // Static banner for single image
+              <img 
+                src={topBannerImages[0]} 
+                alt="Banner" 
+                className="w-full h-full"
+                style={{ display: 'block', margin: 0, padding: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              // Carousel for multiple images
+              <div className="relative w-full h-full" style={{ padding: 0, margin: 0 }}>
+                <AnimatePresence mode="wait">
+                  <motion.img
+                    key={topBannerIndex}
+                    src={topBannerImages[topBannerIndex]}
+                    alt={`Banner ${topBannerIndex + 1}`}
+                    className="w-full h-full absolute inset-0"
+                    style={{ display: 'block', margin: 0, padding: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                  />
+                </AnimatePresence>
+                {/* Carousel indicators */}
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-10">
+                  {topBannerImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setTopBannerIndex(idx)}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                        idx === topBannerIndex 
+                          ? 'bg-white' 
+                          : 'bg-white/50 hover:bg-white/80'
+                      }`}
+                      aria-label={`Go to banner ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -2281,9 +2366,9 @@ export default function Home() {
       </div>
 
       {/* Bottom Banner - Sticky Carousel */}
-      {showBottomBanner && bannersLoaded && (
-        <div className="sticky bottom-0 w-full py-0 flex justify-center" style={{ zIndex: 60 }}>
-          <div className="banner-container relative overflow-hidden flex items-center justify-center" style={{ width: '80%', borderRadius: '10px' }}>
+      {showBottomBanner && bannersLoaded && bannerImages.length > 0 && (
+        <div className="fixed bottom-0 w-full py-0 flex justify-center" style={{ zIndex: 9999 }}>
+          <div className="banner-container bottom-banner-container relative overflow-hidden flex items-center justify-center" style={{ width: '80%', borderRadius: '10px' }}>
             {/* Banner Carousel with Smooth Crossfade */}
             <div className="relative w-full max-w-[900px] mx-auto">
               {/* Close Button */}
@@ -2320,6 +2405,7 @@ export default function Home() {
                     src={image}
                     alt={`Banner ${idx + 1}`}
                     className="w-full h-auto object-contain cursor-pointer mx-auto"
+                    loading="eager"
                     style={{ 
                       borderRadius: '10px',
                       display: 'block',

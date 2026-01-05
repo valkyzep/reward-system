@@ -39,7 +39,8 @@ export async function PUT(request: NextRequest) {
       top_banner_image,
       bottom_banner_images,
       bottom_banner_links,
-      carousel_interval
+      top_banner_interval,
+      bottom_banner_interval
     } = body
 
     // Check if settings exist
@@ -59,7 +60,8 @@ export async function PUT(request: NextRequest) {
           top_banner_image,
           bottom_banner_images,
           bottom_banner_links,
-          carousel_interval,
+          top_banner_interval,
+          bottom_banner_interval,
           updated_at: new Date().toISOString()
         })
         .eq('setting_key', 'main')
@@ -77,7 +79,8 @@ export async function PUT(request: NextRequest) {
           top_banner_image,
           bottom_banner_images,
           bottom_banner_links,
-          carousel_interval
+          top_banner_interval,
+          bottom_banner_interval
         })
         .select()
         .single()

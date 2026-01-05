@@ -27,7 +27,8 @@ export default function AdminDashboard() {
   const [showActionHistory, setShowActionHistory] = useState(false)
   const [showBannerSettings, setShowBannerSettings] = useState(false)
   const [bannerSettingsTab, setBannerSettingsTab] = useState<'top' | 'bottom'>('top')
-  const [topBannerImage, setTopBannerImage] = useState<string | File>('')
+  const [topBannerImages, setTopBannerImages] = useState<Array<{id: number, image: string | File}>>([{id: 1, image: ''}])
+  const [nextTopBannerId, setNextTopBannerId] = useState(2)
   const [bottomBanner1Image, setBottomBanner1Image] = useState<string | File>('')
   const [bottomBanner2Image, setBottomBanner2Image] = useState<string | File>('')
   const [bottomBanner3Image, setBottomBanner3Image] = useState<string | File>('')
@@ -36,7 +37,8 @@ export default function AdminDashboard() {
   const [bottomBanner3Link, setBottomBanner3Link] = useState('https://www.instagram.com')
   const [additionalBanners, setAdditionalBanners] = useState<Array<{id: number, image: string | File, link: string}>>([])
   const [nextBannerId, setNextBannerId] = useState(4)
-  const [carouselInterval, setCarouselInterval] = useState(5)
+  const [topBannerInterval, setTopBannerInterval] = useState(5)
+  const [bottomBannerInterval, setBottomBannerInterval] = useState(5)
   const [isSavingBanners, setIsSavingBanners] = useState(false)
   const [rewardsList, setRewardsList] = useState<any[]>([])
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -284,32 +286,69 @@ export default function AdminDashboard() {
       const response = await fetch('/api/banner-settings')
       if (response.ok) {
         const data = await response.json()
-        setTopBannerImage(data.top_banner_image || '')
-        if (data.bottom_banner_images && data.bottom_banner_images.length >= 3) {
-          setBottomBanner1Image(data.bottom_banner_images[0] || '')
-          setBottomBanner2Image(data.bottom_banner_images[1] || '')
-          setBottomBanner3Image(data.bottom_banner_images[2] || '')
+        
+        // Helper function to parse JSON strings or return as-is
+        const parseIfNeeded = (value: any) => {
+          if (typeof value === 'string') {
+            try {
+              return JSON.parse(value)
+            } catch {
+              return value
+            }
+          }
+          return value
+        }
+        
+        // Load top banners (support both single image string and array)
+        if (data.top_banner_image) {
+          const parsed = parseIfNeeded(data.top_banner_image)
+          if (Array.isArray(parsed)) {
+            // Array of images
+            const topBannersData = parsed.map((img: string, idx: number) => ({
+              id: idx + 1,
+              image: img
+            }))
+            setTopBannerImages(topBannersData.length > 0 ? topBannersData : [{id: 1, image: ''}])
+            setNextTopBannerId(parsed.length + 1)
+          } else {
+            // Single image string
+            setTopBannerImages([{id: 1, image: parsed}])
+            setNextTopBannerId(2)
+          }
+        } else {
+          setTopBannerImages([{id: 1, image: ''}])
+        }
+        
+        // Parse bottom banner images and links
+        const bottomImages = data.bottom_banner_images ? parseIfNeeded(data.bottom_banner_images) : []
+        const bottomLinks = data.bottom_banner_links ? parseIfNeeded(data.bottom_banner_links) : []
+        
+        if (Array.isArray(bottomImages) && bottomImages.length >= 3) {
+          setBottomBanner1Image(bottomImages[0] || '')
+          setBottomBanner2Image(bottomImages[1] || '')
+          setBottomBanner3Image(bottomImages[2] || '')
           
           // Load additional banners beyond the first 3
-          if (data.bottom_banner_images.length > 3) {
+          if (bottomImages.length > 3) {
             const additionalBannersData = []
-            for (let i = 3; i < data.bottom_banner_images.length; i++) {
+            for (let i = 3; i < bottomImages.length; i++) {
               additionalBannersData.push({
                 id: i + 1,
-                image: data.bottom_banner_images[i] || '',
-                link: data.bottom_banner_links?.[i] || ''
+                image: bottomImages[i] || '',
+                link: bottomLinks[i] || ''
               })
             }
             setAdditionalBanners(additionalBannersData)
-            setNextBannerId(data.bottom_banner_images.length + 1)
+            setNextBannerId(bottomImages.length + 1)
           }
         }
-        if (data.bottom_banner_links && data.bottom_banner_links.length >= 3) {
-          setBottomBanner1Link(data.bottom_banner_links[0] || 'https://www.facebook.com')
-          setBottomBanner2Link(data.bottom_banner_links[1] || 'https://www.tiktok.com')
-          setBottomBanner3Link(data.bottom_banner_links[2] || 'https://www.instagram.com')
+        if (Array.isArray(bottomLinks) && bottomLinks.length >= 3) {
+          setBottomBanner1Link(bottomLinks[0] || 'https://www.facebook.com')
+          setBottomBanner2Link(bottomLinks[1] || 'https://www.tiktok.com')
+          setBottomBanner3Link(bottomLinks[2] || 'https://www.instagram.com')
         }
-        setCarouselInterval(data.carousel_interval || 5)
+        setTopBannerInterval(data.top_banner_interval || 5)
+        setBottomBannerInterval(data.bottom_banner_interval || 5)
       }
     } catch (error) {
       console.error('Error loading banner settings:', error)
@@ -321,30 +360,36 @@ export default function AdminDashboard() {
     setIsSavingBanners(true)
     try {
       // Upload images if they are File objects
-      let topBannerUrl = typeof topBannerImage === 'string' ? topBannerImage : ''
       let banner1Url = typeof bottomBanner1Image === 'string' ? bottomBanner1Image : ''
       let banner2Url = typeof bottomBanner2Image === 'string' ? bottomBanner2Image : ''
       let banner3Url = typeof bottomBanner3Image === 'string' ? bottomBanner3Image : ''
 
-      // Upload top banner if it's a file
-      if (topBannerImage instanceof File) {
-        const formData = new FormData()
-        formData.append('file', topBannerImage)
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          headers: {
-            'x-csrf-token': csrfToken
-          },
-          body: formData,
-        })
-        if (uploadResponse.ok) {
-          const uploadData = await uploadResponse.json()
-          topBannerUrl = uploadData.url
-        } else {
-          const errorData = await uploadResponse.json()
-          console.error('Top banner upload failed:', uploadResponse.status, errorData)
-          alert(`Failed to upload top banner: ${errorData.error || 'Unknown error'}`)
-          throw new Error('Top banner upload failed')
+      // Upload top banners if they are files
+      const topBannerUrls: string[] = []
+      for (const banner of topBannerImages) {
+        let bannerUrl = typeof banner.image === 'string' ? banner.image : ''
+        if (banner.image instanceof File) {
+          const formData = new FormData()
+          formData.append('file', banner.image)
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+              'x-csrf-token': csrfToken
+            },
+            body: formData,
+          })
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json()
+            bannerUrl = uploadData.url
+          } else {
+            const errorData = await uploadResponse.json()
+            console.error('Top banner upload failed:', uploadResponse.status, errorData)
+            alert(`Failed to upload top banner: ${errorData.error || 'Unknown error'}`)
+            throw new Error('Top banner upload failed')
+          }
+        }
+        if (bannerUrl) {
+          topBannerUrls.push(bannerUrl)
         }
       }
 
@@ -454,10 +499,11 @@ export default function AdminDashboard() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          top_banner_image: topBannerUrl,
+          top_banner_image: topBannerUrls,
           bottom_banner_images: allBannerImages,
           bottom_banner_links: allBannerLinks,
-          carousel_interval: carouselInterval
+          top_banner_interval: topBannerInterval,
+          bottom_banner_interval: bottomBannerInterval
         })
       })
 
@@ -2962,49 +3008,109 @@ export default function AdminDashboard() {
               {bannerSettingsTab === 'top' && (
                 <div>
                   <h3 className="text-xl font-bold text-white mb-4">Top Banner Configuration</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-gray-300 mb-2 font-semibold">Banner Image</label>
-                      <div className="flex flex-col gap-3">
-                        <div className="relative">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0]
-                              if (file) setTopBannerImage(file)
-                            }}
-                            className="hidden"
-                            id="topBannerUpload"
-                          />
-                          <label
-                            htmlFor="topBannerUpload"
-                            className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-700 border-2 border-dashed border-gray-600 rounded-lg text-gray-300 hover:bg-gray-600 hover:border-yellow-500 cursor-pointer transition"
+                  <p className="text-gray-400 text-sm mb-4">📌 Add 1 banner for static display, or 2+ banners for auto-rotating carousel</p>
+                  <div className="space-y-6">
+                    {/* Top Banners */}
+                    {topBannerImages.map((banner, index) => (
+                      <div key={banner.id} className="bg-gray-700/50 p-4 rounded-lg relative">
+                        {topBannerImages.length > 1 && (
+                          <button
+                            onClick={() => setTopBannerImages(topBannerImages.filter(b => b.id !== banner.id))}
+                            className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold z-10"
+                            title="Remove banner"
                           >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                            <span className="font-semibold">Upload Banner Image</span>
-                          </label>
-                        </div>
-                        {topBannerImage && (
-                          <div className="relative rounded-lg overflow-hidden border-2 border-gray-600">
-                            <img
-                              src={typeof topBannerImage === 'string' ? topBannerImage : URL.createObjectURL(topBannerImage)}
-                              alt="Top Banner Preview"
-                              className="w-full h-32 object-cover"
-                            />
-                            <button
-                              onClick={() => setTopBannerImage('')}
-                              className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-8 h-8 flex items-center justify-center"
-                            >
-                              ×
-                            </button>
-                          </div>
+                            ×
+                          </button>
                         )}
+                        <h4 className="text-lg font-semibold text-yellow-400 mb-3">Top Banner {index + 1}</h4>
+                        <div>
+                          <label className="block text-gray-300 mb-2">Banner Image</label>
+                          <div className="flex flex-col gap-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) {
+                                  // Check file size (max 10MB)
+                                  const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+                                  if (file.size > maxSize) {
+                                    alert('File size too large. Maximum size is 10MB.')
+                                    e.target.value = '' // Reset input
+                                    return
+                                  }
+                                  setTopBannerImages(topBannerImages.map(b => 
+                                    b.id === banner.id ? { ...b, image: file } : b
+                                  ))
+                                }
+                              }}
+                              className="hidden"
+                              id={`topBanner${banner.id}Upload`}
+                            />
+                            <label
+                              htmlFor={`topBanner${banner.id}Upload`}
+                              className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-gray-300 hover:bg-gray-500 hover:border-yellow-500 cursor-pointer transition text-sm"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                              </svg>
+                              <span>Upload Image</span>
+                            </label>
+                            {banner.image && (
+                              <div className="relative rounded overflow-hidden border border-gray-500">
+                                <img
+                                  src={typeof banner.image === 'string' ? banner.image : URL.createObjectURL(banner.image)}
+                                  alt={`Top Banner ${index + 1}`}
+                                  className="w-full h-24 object-cover"
+                                />
+                                <button
+                                  onClick={() => setTopBannerImages(topBannerImages.map(b => 
+                                    b.id === banner.id ? { ...b, image: '' } : b
+                                  ))}
+                                  className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-gray-400 text-sm mt-2">Current: /Bannertop.png</p>
-                    </div>
+                    ))}
+
+                    {/* Add Top Banner Button */}
+                    <button
+                      onClick={() => {
+                        setTopBannerImages([...topBannerImages, { id: nextTopBannerId, image: '' }])
+                        setNextTopBannerId(nextTopBannerId + 1)
+                      }}
+                      className="w-full bg-gray-700 hover:bg-gray-600 border-2 border-dashed border-gray-500 hover:border-yellow-500 text-gray-300 hover:text-yellow-400 px-4 py-6 rounded-lg font-semibold text-lg transition flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add Top Banner
+                    </button>
+
+                    {/* Carousel Settings for Top Banner */}
+                    {topBannerImages.length >= 2 && (
+                      <div className="bg-gray-700/50 p-4 rounded-lg">
+                        <h4 className="text-lg font-semibold text-yellow-400 mb-3">Top Banner Carousel Settings</h4>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-gray-300 mb-2">Auto-rotate Interval (seconds)</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="30"
+                              value={topBannerInterval}
+                              onChange={(e) => setTopBannerInterval(parseInt(e.target.value) || 5)}
+                              className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -3025,7 +3131,16 @@ export default function AdminDashboard() {
                               accept="image/*"
                               onChange={(e) => {
                                 const file = e.target.files?.[0]
-                                if (file) setBottomBanner1Image(file)
+                                if (file) {
+                                  // Check file size (max 10MB)
+                                  const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+                                  if (file.size > maxSize) {
+                                    alert('File size too large. Maximum size is 10MB.')
+                                    e.target.value = '' // Reset input
+                                    return
+                                  }
+                                  setBottomBanner1Image(file)
+                                }
                               }}
                               className="hidden"
                               id="bottomBanner1Upload"
@@ -3081,7 +3196,16 @@ export default function AdminDashboard() {
                               accept="image/*"
                               onChange={(e) => {
                                 const file = e.target.files?.[0]
-                                if (file) setBottomBanner2Image(file)
+                                if (file) {
+                                  // Check file size (max 10MB)
+                                  const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+                                  if (file.size > maxSize) {
+                                    alert('File size too large. Maximum size is 10MB.')
+                                    e.target.value = '' // Reset input
+                                    return
+                                  }
+                                  setBottomBanner2Image(file)
+                                }
                               }}
                               className="hidden"
                               id="bottomBanner2Upload"
@@ -3137,7 +3261,16 @@ export default function AdminDashboard() {
                               accept="image/*"
                               onChange={(e) => {
                                 const file = e.target.files?.[0]
-                                if (file) setBottomBanner3Image(file)
+                                if (file) {
+                                  // Check file size (max 10MB)
+                                  const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+                                  if (file.size > maxSize) {
+                                    alert('File size too large. Maximum size is 10MB.')
+                                    e.target.value = '' // Reset input
+                                    return
+                                  }
+                                  setBottomBanner3Image(file)
+                                }
                               }}
                               className="hidden"
                               id="bottomBanner3Upload"
@@ -3202,6 +3335,13 @@ export default function AdminDashboard() {
                                 onChange={(e) => {
                                   const file = e.target.files?.[0]
                                   if (file) {
+                                    // Check file size (max 10MB)
+                                    const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+                                    if (file.size > maxSize) {
+                                      alert('File size too large. Maximum size is 10MB.')
+                                      e.target.value = '' // Reset input
+                                      return
+                                    }
                                     setAdditionalBanners(additionalBanners.map(b => 
                                       b.id === banner.id ? { ...b, image: file } : b
                                     ))
@@ -3270,7 +3410,7 @@ export default function AdminDashboard() {
 
                     {/* Carousel Settings */}
                     <div className="bg-gray-700/50 p-4 rounded-lg">
-                      <h4 className="text-lg font-semibold text-yellow-400 mb-3">Carousel Settings</h4>
+                      <h4 className="text-lg font-semibold text-yellow-400 mb-3">Bottom Banner Carousel Settings</h4>
                       <div className="space-y-3">
                         <div>
                           <label className="block text-gray-300 mb-2">Auto-rotate Interval (seconds)</label>
@@ -3278,8 +3418,8 @@ export default function AdminDashboard() {
                             type="number"
                             min="1"
                             max="30"
-                            value={carouselInterval}
-                            onChange={(e) => setCarouselInterval(parseInt(e.target.value) || 5)}
+                            value={bottomBannerInterval}
+                            onChange={(e) => setBottomBannerInterval(parseInt(e.target.value) || 5)}
                             className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-500"
                           />
                         </div>
