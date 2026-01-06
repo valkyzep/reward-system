@@ -429,9 +429,9 @@ body {
   background-repeat: no-repeat;
 }
 
-/* Hide mobile video on desktop by default */
+/* Show mobile video on mobile devices by default */
 .mobile-modal-video {
-  display: none;
+  display: block;
 }
 
 .welcome-modal-btn {
@@ -484,11 +484,9 @@ body {
     width: 100% !important;
   }
   
-  /* Background - mobile image */
+  /* Remove background image for video to show */
   .welcome-modal-bg {
-    background-image: url('/fullmodal-mobile.png') !important;
-    background-size: cover !important;
-    background-position: center !important;
+    background-image: none !important;
     overflow: hidden !important;
     width: 100vw !important;
     max-width: 100vw !important;
@@ -1445,12 +1443,14 @@ body {
 
 /* DESKTOP STYLES (1025px and above) */
 @media (min-width: 1025px) {
-  /* Background - desktop image */
+  /* Remove background image for video to show */
   .welcome-modal-bg {
-    background-image: url('/fullmodal.png') !important;
-    background-size: cover !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
+    background-image: none !important;
+  }
+  
+  /* Hide mobile video on desktop */
+  .mobile-modal-video {
+    display: none !important;
   }
   
   /* Button - auto width */
@@ -1468,11 +1468,9 @@ body {
     width: 100% !important;
   }
   
-  /* Background - mobile image */
+  /* Remove background image for video to show */
   .welcome-modal-bg {
-    background-image: url('/fullmodal-mobile.png') !important;
-    background-size: cover !important;
-    background-position: center !important;
+    background-image: none !important;
     overflow: hidden !important;
     width: 100vw !important;
     max-width: 100vw !important;

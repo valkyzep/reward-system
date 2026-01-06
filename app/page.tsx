@@ -627,6 +627,7 @@ export default function Home() {
               loop 
               muted 
               playsInline
+              preload="auto"
               className="mobile-modal-video lg:hidden"
               style={{
                 position: 'absolute',
@@ -636,6 +637,10 @@ export default function Home() {
                 height: '100%',
                 objectFit: 'cover',
                 zIndex: 0
+              }}
+              onLoadedMetadata={(e) => {
+                const video = e.currentTarget;
+                video.play().catch(err => console.log('Video play failed:', err));
               }}
             >
               <source src="/t2cmobilemodal.mp4" type="video/mp4" />
@@ -647,6 +652,7 @@ export default function Home() {
               loop 
               muted 
               playsInline
+              preload="auto"
               className="hidden lg:block"
               style={{
                 position: 'absolute',
@@ -656,6 +662,10 @@ export default function Home() {
                 height: '100%',
                 objectFit: 'cover',
                 zIndex: 0
+              }}
+              onLoadedMetadata={(e) => {
+                const video = e.currentTarget;
+                video.play().catch(err => console.log('Video play failed:', err));
               }}
             >
               <source src="/t2cdesktopmodal.mp4" type="video/mp4" />
