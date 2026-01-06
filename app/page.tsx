@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence, animate } from 'framer-motion'
 import dynamic from 'next/dynamic'
+import { supabase } from '@/lib/supabase'
 
 const PointsRangeSlider = dynamic(() => import('./PointsRangeSlider'), { ssr: false })
 
@@ -318,6 +319,146 @@ export default function Home() {
     fetchTiers()
   }, [])
 
+  // Real-time subscription for rewards changes
+  useEffect(() => {
+    // Subscribe to INSERT events
+    const rewardsInsertChannel = supabase
+      .channel('rewards-insert-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'rewards'
+        },
+        async (payload) => {
+          console.log('New reward added:', payload.new)
+          // Refetch all rewards to get proper formatting with images
+          try {
+            const response = await fetch('/api/rewards')
+            const data = await response.json()
+            setRewards(data)
+          } catch (error) {
+            console.error('Error refetching rewards after insert:', error)
+          }
+        }
+      )
+      .subscribe()
+
+    // Subscribe to UPDATE events
+    const rewardsUpdateChannel = supabase
+      .channel('rewards-update-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rewards'
+        },
+        async (payload) => {
+          console.log('Reward updated:', payload.new)
+          // Refetch all rewards to get proper formatting with images and calculated quantities
+          try {
+            const response = await fetch('/api/rewards')
+            const data = await response.json()
+            setRewards(data)
+          } catch (error) {
+            console.error('Error refetching rewards after update:', error)
+          }
+        }
+      )
+      .subscribe()
+
+    // Subscribe to DELETE events
+    const rewardsDeleteChannel = supabase
+      .channel('rewards-delete-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'rewards'
+        },
+        (payload) => {
+          console.log('Reward deleted:', payload.old)
+          setRewards(prev => 
+            prev.filter(reward => reward.id !== payload.old.id)
+          )
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      supabase.removeChannel(rewardsInsertChannel)
+      supabase.removeChannel(rewardsUpdateChannel)
+      supabase.removeChannel(rewardsDeleteChannel)
+    }
+  }, [])
+
+  // Real-time subscription for categories changes
+  useEffect(() => {
+    const categoriesChannel = supabase
+      .channel('categories-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'categories'
+        },
+        async () => {
+          // Refetch categories on any change
+          try {
+            const response = await fetch('/api/admin/categories')
+            const data = await response.json()
+            if (Array.isArray(data)) {
+              setCategories(data)
+            }
+          } catch (error) {
+            console.error('Error refetching categories:', error)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(categoriesChannel)
+    }
+  }, [])
+
+  // Real-time subscription for tiers changes
+  useEffect(() => {
+    const tiersChannel = supabase
+      .channel('tiers-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tiers'
+        },
+        async () => {
+          // Refetch tiers on any change
+          try {
+            const response = await fetch('/api/admin/tiers')
+            const data = await response.json()
+            if (Array.isArray(data)) {
+              setTiers(data)
+            }
+          } catch (error) {
+            console.error('Error refetching tiers:', error)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(tiersChannel)
+    }
+  }, [])
+
+
   // Memoize filtered carousel rewards (diamond and black-diamond only)
   const carouselRewards = useMemo(() => {
     if (!Array.isArray(rewards)) return [];
@@ -455,7 +596,7 @@ export default function Home() {
         return b.points - a.points
       }
       if (sortOption === 'discounted') {
-        // Filter for active discounts only, then sort by discount percentage (highest first)
+        // Check if items have active discounts
         const now = new Date()
         const aHasDiscount = (a as any).discounted_price && 
                              (a as any).discounted_price < a.points &&
@@ -464,20 +605,16 @@ export default function Home() {
                              (b as any).discounted_price < b.points &&
                              (!(b as any).discount_end_date || now < new Date((b as any).discount_end_date))
         
-        // Items with discounts come first
+        // Discounted items come first
         if (aHasDiscount && !bHasDiscount) return -1
         if (!aHasDiscount && bHasDiscount) return 1
         
-        // Both have discounts - calculate and sort by discount percentage (highest first)
-        if (aHasDiscount && bHasDiscount) {
-          const aDiscountPercent = (1 - (a as any).discounted_price / a.points) * 100
-          const bDiscountPercent = (1 - (b as any).discounted_price / b.points) * 100
-          if (aDiscountPercent !== bDiscountPercent) return bDiscountPercent - aDiscountPercent
-          // Secondary sort by points (highest first)
-          return b.points - a.points
-        }
+        // Both discounted OR both not discounted - sort by tier then price
+        // Sort by tier first
+        if (aTierOrder !== bTierOrder) return aTierOrder - bTierOrder
         
-        // Neither has discount - sort by points
+        // Same tier - sort by price (highest first, then lowest)
+        // This creates: high price items, then low price items within same tier
         return b.points - a.points
       }
       
