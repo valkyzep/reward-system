@@ -45,6 +45,11 @@ export default function Home() {
   const [csrfToken, setCsrfToken] = useState<string>('')
   const [categories, setCategories] = useState<any[]>([])
   const [tiers, setTiers] = useState<any[]>([])
+  
+  // Claim cooldown (5 minutes)
+  const [lastClaimTime, setLastClaimTime] = useState<number | null>(null)
+  const [claimCooldown, setClaimCooldown] = useState<number>(0)
+  const [canClaim, setCanClaim] = useState(true)
 
   // Counter animation for stats
   const [rewardsClaimedCount, setRewardsClaimedCount] = useState(0)
@@ -214,6 +219,43 @@ export default function Home() {
       .then(data => setCsrfToken(data.csrfToken))
       .catch(err => console.error('Failed to fetch CSRF token:', err))
   }, [])
+
+  // Load last claim time from localStorage on mount
+  useEffect(() => {
+    const storedTime = localStorage.getItem('lastClaimTime')
+    if (storedTime) {
+      const time = parseInt(storedTime)
+      setLastClaimTime(time)
+      checkCooldown(time)
+    }
+  }, [])
+
+  // Cooldown timer - update every second
+  useEffect(() => {
+    if (!canClaim && lastClaimTime) {
+      const interval = setInterval(() => {
+        checkCooldown(lastClaimTime)
+      }, 1000)
+      return () => clearInterval(interval)
+    }
+  }, [canClaim, lastClaimTime])
+
+  // Function to check if cooldown has expired
+  const checkCooldown = (claimTime: number) => {
+    const now = Date.now()
+    const elapsed = now - claimTime
+    const cooldownMs = 5 * 60 * 1000 // 5 minutes in milliseconds
+    
+    if (elapsed >= cooldownMs) {
+      setCanClaim(true)
+      setClaimCooldown(0)
+      localStorage.removeItem('lastClaimTime')
+    } else {
+      setCanClaim(false)
+      const remainingSeconds = Math.ceil((cooldownMs - elapsed) / 1000)
+      setClaimCooldown(remainingSeconds)
+    }
+  }
 
   // Preload tier background images
   useEffect(() => {
@@ -2108,6 +2150,14 @@ export default function Home() {
                 <form className="popup-claim-form space-y-2" onSubmit={async (e) => { 
                   e.preventDefault(); 
                   
+                  // Check cooldown before processing
+                  if (!canClaim) {
+                    const minutes = Math.floor(claimCooldown / 60);
+                    const seconds = claimCooldown % 60;
+                    alert(`Please wait ${minutes}m ${seconds}s before claiming again.`);
+                    return;
+                  }
+                  
                   const formData = new FormData(e.currentTarget);
                   const phoneNumber = formData.get('phoneNumber');
                   const ewalletAccount = formData.get('ewalletAccount');
@@ -2137,6 +2187,13 @@ export default function Home() {
                     if (response.ok) {
                       setClaimId(data.claimId);
                       setShowSuccessModal(true);
+                      
+                      // Set cooldown after successful claim
+                      const now = Date.now();
+                      setLastClaimTime(now);
+                      localStorage.setItem('lastClaimTime', now.toString());
+                      setCanClaim(false);
+                      checkCooldown(now);
                     } else {
                       alert('Error submitting claim: ' + data.error);
                     }
@@ -2358,13 +2415,14 @@ export default function Home() {
                   {/* Submit Button */}
                   <motion.button 
                     type="submit" 
-                    className="w-full text-white px-4 py-3 rounded-lg font-bold transition text-sm md:text-base" 
-                    style={{ background: 'linear-gradient(90deg, #FF7901 0%, #FFA323 100%)' }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    disabled={!canClaim}
+                    className={`w-full text-white px-4 py-3 rounded-lg font-bold transition text-sm md:text-base ${!canClaim ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    style={{ background: canClaim ? 'linear-gradient(90deg, #FF7901 0%, #FFA323 100%)' : '#666666' }}
+                    whileHover={canClaim ? { scale: 1.02 } : {}}
+                    whileTap={canClaim ? { scale: 0.98 } : {}}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
                   >
-                    Claim My Reward
+                    {canClaim ? 'Claim My Reward' : `Wait ${Math.floor(claimCooldown / 60)}:${(claimCooldown % 60).toString().padStart(2, '0')}`}
                   </motion.button>
                 </form>
               </div>
