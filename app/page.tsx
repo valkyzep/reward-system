@@ -1623,7 +1623,7 @@ export default function Home() {
               </div>
             </div>
           ) : (
-          <div className="rewards-grid grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8 w-full max-w-7xl px-1 overflow-visible pt-8">
+          <div className="rewards-grid grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8 w-full max-w-7xl px-4 sm:px-6 md:px-8 overflow-visible pt-8">
           {paginatedRewards.map((item) => {
             const availableStock = item.quantity || 0
             const isLowStock = availableStock <= 10 && availableStock >= 2
@@ -1716,13 +1716,13 @@ export default function Home() {
                 return null
               })()}
               
-              <div className="transition-all duration-200 h-full" style={{aspectRatio: '1180/1756'}}>
+              <div className="transition-all duration-200 h-full" style={{aspectRatio: '1180/1756', overflow: 'visible'}}>
               <div 
                 className={`reward-card-content relative flex flex-col items-center justify-end transition-all duration-200 w-full h-full overflow-hidden ${tierStyles.className}`}
                 style={{
                   borderRadius: '7px',
                   backgroundImage: `url(/${tier}.png)`,
-                  backgroundSize: '100% 100%',
+                  backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   backgroundRepeat: 'no-repeat',
                   ...(isLowStock || isLastOne ? {

@@ -1457,6 +1457,39 @@ body {
   .welcome-modal-btn {
     width: auto;
   }
+  
+  /* Fix overflow for rewards grid - Allow horizontal overflow for hover effects */
+  html, body {
+    overflow-x: visible !important;
+  }
+  
+  body > div {
+    overflow-x: visible !important;
+  }
+  
+  /* Allow overflow for rewards section */
+  .flex.flex-1.w-full {
+    overflow: visible !important;
+  }
+  
+  .main-content {
+    overflow: visible !important;
+  }
+  
+  .rewards-grid {
+    overflow: visible !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+  }
+  
+  .reward-card-wrapper {
+    overflow: visible !important;
+  }
+  
+  /* Ensure grid items don't get clipped */
+  .reward-card-content {
+    will-change: transform;
+  }
 }
 
 /* MOBILE ONLY STYLES (max-width: 767px) */
