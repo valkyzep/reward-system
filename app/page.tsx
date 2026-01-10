@@ -869,14 +869,9 @@ export default function Home() {
                   style={{ width: 'clamp(200px, 60vw, 600px)' }}
                 />
                 {/* Title */}
-                <h1 className="w-full font-extrabold mb-2 text-white drop-shadow-lg text-center lg:text-left tracking-tight" style={{ fontSize: 'clamp(1.5rem, 5vw, 3.75rem)', lineHeight: '1.2' }}>
+                <h1 className="w-full font-extrabold mb-5 text-white drop-shadow-lg text-center lg:text-left tracking-tight" style={{ fontSize: 'clamp(1.5rem, 5vw, 3.75rem)', lineHeight: '1.2' }}>
                   Claim Your Epic Rewards
                 </h1>
-                {/* Description */}
-                
-                <p className="text-white mb-5 max-w-3xl text-center lg:text-left drop-shadow-lg font-medium" style={{ fontSize: 'clamp(0.875rem, 2.5vw, 1.25rem)' }}>
-                  Redeem Time2Bet points for luxury cars, watches, gadgets & more.
-                </p>
                 
                 {/* Button and Stats Container - Flexed for mobile */}
                 <div className="w-full flex flex-col items-center lg:items-start" style={{ gap: 'clamp(0.75rem, 2vw, 1rem)' }}>
